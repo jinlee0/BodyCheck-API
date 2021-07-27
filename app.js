@@ -1,10 +1,12 @@
 const express = require("express");
 const session = require('express-session');
 const path = require('path');
+const nunjucks = require('nunjucks');
 const dotenv = require('dotenv');
 const passport = require('passport');
 
 dotenv.config();
+const indexRouter = require('./routes');
 const authRouter = require('./routes/auth');
 
 const { sequelize } = require('./models');
@@ -14,6 +16,10 @@ const app = express();
 passportConfig(); // 패스포트 설정
 app.set('port', process.env.PORT || 5001);
 app.set('view engine', 'html');
+nunjucks.configure('views', {
+    express: app,
+    watch: true,
+});
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -37,6 +43,7 @@ app.use(session({
 app.use(passport.initialize()); // req에 passport 추가
 app.use(passport.session()); // req.session에 passport 저장, session()보다 뒤에 있어야 함.
 
+app.use('/', indexRouter);
 app.use('/auth', authRouter);
 
 app.listen(app.get('port'), () => {
