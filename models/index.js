@@ -1,8 +1,8 @@
 const Sequelize = require('sequelize');
 
-/*
-모델 임포트
+// 모델 임포트
 const User = require('./user');
+/*
 const Member = require('./member');
 const Team = require('./team');
 const Project = require('./project');
@@ -16,20 +16,22 @@ const sequelize = new Sequelize(config.database, config.username, config.passwor
 
 db.sequelize = sequelize;
 
-/*
 db.User = User;
+/*
 db.Member = Member;
 db.Team = Team;
 db.Project = Project;
-
-모델 생성
+*/
+// 모델 생성
 User.init(sequelize);
+/*
 Member.init(sequelize);
 Team.init(sequelize);
 Project.init(sequelize);
-
-모델 관계 설정
+*/
+// 모델 관계 설정
 User.associate(db);
+/*
 Member.associate(db);
 Team.associate(db);
 Project.associate(db);
