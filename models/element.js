@@ -27,7 +27,9 @@ module.exports = class Element extends Sequelize.Model {
 
         db.Element.hasMany(db.ElementInt);
         db.Element.hasMany(db.ElementString);
-        db.Element.hasMany(db.ElementText);
         db.Element.hasMany(db.ElementTime);
+
+        // 삭제
+        // db.Element.hasMany(db.ElementText);
     }
 };

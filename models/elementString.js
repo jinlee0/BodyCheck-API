@@ -5,7 +5,7 @@ module.exports = class ElementString extends Sequelize.Model {
         return super.init({
             // id 컬럼은 자동 생성
             record: {
-                type: Sequelize.STRING(10),
+                type: Sequelize.STRING(45),
                 allowNull: false,
             },
         }, {
