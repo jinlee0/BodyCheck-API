@@ -1,8 +1,15 @@
 const Sequelize = require('sequelize');
 
 // 모델 임포트
-const User = require('./user');
 const Domain = require('./domain');
+const Element = require('./element');
+const ElementInt = require('./elementInt');
+const ElementString = require('./elementString');
+const ElementText = require('./elementText');
+const ElementTime = require('./elementTime');
+const ElementType = require('./elementType');
+const Exercise = require('./exercise');
+const User = require('./user');
 /*
 const Member = require('./member');
 const Team = require('./team');
@@ -17,28 +24,36 @@ const sequelize = new Sequelize(config.database, config.username, config.passwor
 
 db.sequelize = sequelize;
 
-db.User = User;
 db.Domain = Domain;
-/*
-db.Member = Member;
-db.Team = Team;
-db.Project = Project;
-*/
+db.Element = Element;
+db.ElementInt = ElementInt;
+db.ElementString = ElementString;
+db.ElementText = ElementText;
+db.ElementTime = ElementTime;
+db.ElementType = ElementType;
+db.Exercise = Exercise;
+db.User = User;
+
 // 모델 생성
-User.init(sequelize);
 Domain.init(sequelize);
-/*
-Member.init(sequelize);
-Team.init(sequelize);
-Project.init(sequelize);
-*/
+Element.init(sequelize);
+ElementInt.init(sequelize);
+ElementString.init(sequelize);
+ElementText.init(sequelize);
+ElementTime.init(sequelize);
+ElementType.init(sequelize);
+Exercise.init(sequelize);
+User.init(sequelize);
+
 // 모델 관계 설정
-User.associate(db);
 Domain.associate(db);
-/*
-Member.associate(db);
-Team.associate(db);
-Project.associate(db);
-*/
+Element.associate(db);
+ElementInt.associate(db);
+ElementString.associate(db);
+ElementText.associate(db);
+ElementTime.associate(db);
+ElementType.associate(db);
+Exercise.associate(db);
+User.associate(db);
 
 module.exports = db;
