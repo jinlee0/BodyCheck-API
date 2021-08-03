@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <fieldset>
+      <legend>운동 정의</legend>
+      <form action="exercise/" method="post" id="form">
+        <div class="variableHead">
+          <label for="exerciseName">운동이름</label>
+          <input type="text" id="exerciseName" name="exerciseName" />
+        </div>
+        변수1
+        <div>
+          <label for="variableName1">--변수1 이름</label>
+          <input
+            type="text"
+            class="variableName"
+            id="variableName1"
+            name="variableName1"
+          />
+        </div>
+        <div>
+          <label for="variableType1">--변수1 타입</label>
+          <select class="variableType" name="variableType1" id="variableType1">
+            <option value="1">숫자</option>
+            <option value="2">문자</option>
+            <option value="3">시간</option>
+            <option value="99">에러</option>
+          </select>
+        </div>
+        <button id="plus-button" type="button">+</button>
+        <div>
+          <button id="submitBtn" type="button">저장</button>
+        </div>
+        <div>
+          <button id="backBtn" type="button">뒤로</button>
+        </div>
+      </form>
+    </fieldset>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+      window.onload = () => {
+        if (new URL(location.href).searchParams.get("loginError")) {
+          alert(new URL(location.href).searchParams.get("loginError"));
+        }
+        const plusbtn = document.getElementById("plus-button");
+        plusbtn.onclick = (e) => {
+          const variableNames = document.getElementsByClassName("variableName");
+          const newNum = variableNames.length + 1;
+
+          let newVariableHead = document.createElement("div");
+          newVariableHead.className = "variableHead";
+          newVariableHead.innerHTML = `변수${newNum}`;
+          let newNameDiv = document.createElement("div");
+          newNameDiv.innerHTML = `
+          <label for="variableName${newNum}">--변수${newNum} 이름</label>
+          <input
+            type="text"
+            class="variableName"
+            id="variableName${newNum}"
+            name="variableName${newNum}"
+          />`;
+          let newTypeDiv = document.createElement("Div");
+          newTypeDiv.innerHTML = `
+          <label for="variableType${newNum}">--변수1 타입</label>
+          <select class="variableType" name="variableType${newNum}" id="variableType${newNum}">
+            <option value="1">숫자</option>
+            <option value="2">문자</option>
+            <option value="3">시간</option>
+            <option value="99">에러</option>
+          </select>`;
+
+          const exerciseForm = document.getElementById("form");
+          exerciseForm.insertBefore(newVariableHead, plusbtn);
+          exerciseForm.insertBefore(newNameDiv, plusbtn);
+          exerciseForm.insertBefore(newTypeDiv, plusbtn);
+        };
+
+        const submitBtn = document.getElementById("submitBtn");
+        submitBtn.onclick = async (e) => {
+          const variableHeads = document.getElementsByClassName("variableHead");
+          const variableCount = variableHeads.length;
+          const variableNames = document.getElementsByClassName("variableName");
+          const variableTypes = document.getElementsByClassName("variableType");
+          let exercise = new Object();
+          exercise.name = document.getElementById("exerciseName").value;
+          let variables = Array();
+          exercise.variables = variables;
+          for (let i = 0; i < variableCount; i++) {
+            variables[i] = new Object();
+            variables[i].name = variableNames[i].value;
+            variables[i].type = variableTypes[i].value;
+          }
+
+          try {
+            const res = await axios.post("/exercise", exercise);
+            if (res.data.error) {
+              alert(res.data.error + " " + res.data.cause.name);
+              window.location = "exerciseTest.html";
+            } else {
+              alert("성공 " + res.data.name + " " + res.data.variables);
+              window.location = "/";
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        };
+      };
+    </script>
+  </body>
+</html>
