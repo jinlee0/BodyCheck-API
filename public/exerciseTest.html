@@ -9,7 +9,7 @@
   <body>
     <fieldset>
       <legend>운동 정의</legend>
-      <form action="exercise/" method="post" id="form">
+      <form action="exercises/" method="post" id="form">
         <div class="variableHead">
           <label for="exerciseName">운동이름</label>
           <input type="text" id="exerciseName" name="exerciseName" />
@@ -98,9 +98,9 @@
           }
 
           try {
-            const res = await axios.post("/exercise", exercise);
+            const res = await axios.post("/exercises", exercise);
             if (res.data.error) {
-              alert(res.data.error + " " + res.data.cause.name);
+              alert(res.data.error + " " + res.data.cause);
               window.location = "exerciseTest.html";
             } else {
               alert("성공 " + res.data.name + " " + res.data.variables);
