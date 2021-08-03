@@ -11,8 +11,7 @@ module.exports = class Exercise extends Sequelize.Model {
         }, {
             sequelize,
             timestamps: false,
-            // timestamps: true, // 레코드 생성, 수정 시간 기록 컬럼 자동 생성
-            underscored: false, // 뭐더라
+            underscored: false,
             modelName: 'Exercise',
             tableName: 'exercises',
             // paranoid: true, // 레코드 삭제 시간 기록 컬럼 자동 생성
@@ -24,6 +23,6 @@ module.exports = class Exercise extends Sequelize.Model {
     static associate(db) {
         // 관계
         db.Exercise.belongsTo(db.User);
-        db.Exercise.hasMany(db.Element);
+        db.Exercise.hasMany(db.Variable);
     }
 };

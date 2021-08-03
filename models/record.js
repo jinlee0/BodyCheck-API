@@ -1,10 +1,10 @@
 const Sequelize = require('sequelize');
 
-module.exports = class Element extends Sequelize.Model {
+module.exports = class Record extends Sequelize.Model {
     static init(sequelize) {
         return super.init({
             // id 컬럼은 자동 생성
-            name: {
+            record: {
                 type: Sequelize.STRING(45),
                 allowNull: false,
             },
@@ -12,8 +12,8 @@ module.exports = class Element extends Sequelize.Model {
             sequelize,
             timestamps: false,
             underscored: false,
-            modelName: 'Element',
-            tableName: 'elements',
+            modelName: 'Record',
+            tableName: 'records',
             // paranoid: true, // 레코드 삭제 시간 기록 컬럼 자동 생성
             charset: 'utf8',
             collate: 'utf8_general_ci',
@@ -22,14 +22,6 @@ module.exports = class Element extends Sequelize.Model {
 
     static associate(db) {
         // 관계
-        db.Element.belongsTo(db.Exercise);
-        db.Element.belongsTo(db.ElementType);
-
-        db.Element.hasMany(db.ElementInt);
-        db.Element.hasMany(db.ElementString);
-        db.Element.hasMany(db.ElementTime);
-
-        // 삭제
-        // db.Element.hasMany(db.ElementText);
+        db.Record.belongsTo(db.Variable);
     }
 };
