@@ -8,6 +8,7 @@ const passport = require('passport');
 dotenv.config();
 const indexRouter = require('./routes');
 const authRouter = require('./routes/auth');
+const exerciseRouter = require('./routes/exercise');
 
 const { sequelize } = require('./models');
 const passportConfig = require('./passport');
@@ -45,6 +46,7 @@ app.use(passport.session()); // req.session에 passport 저장, session()보다 
 
 app.use('/', indexRouter);
 app.use('/auth', authRouter);
+app.use('/exercise', exerciseRouter);
 
 app.listen(app.get('port'), () => {
     console.log(app.get('port'), '번 포트 활성화');
