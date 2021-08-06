@@ -1,35 +1,76 @@
 const jwt = require('jsonwebtoken');
 
-exports.isLoggedIn = (req, res, next) => {
-  if (req.isAuthenticated()) {
-    next();
-  } else {
-    res.status(403).send('로그인 필요');
+let middlewares = {};
+
+// utils
+middlewares.getSuccess = (data) => {
+  return {
+    success: true,
+    message: null,
+    data
+  }
+}
+
+middlewares.getFailure = (message) => {
+  if (!message) {
+    message = 'data not found';
+  }
+  return {
+    success: false,
+    message,
+    data: null
+  }
+}
+
+
+// middlewares
+middlewares.isLoggedIn = (req, res, next) => {
+  const token = req.headers['bodycheck-access-token'];
+  if (!token) {
+    return res.status(400).json(middlewares.getFailure('token is required'));
+  }
+  else {
+    jwt.verify(token, process.env.JWT_SECRET, (error, decoded) => {
+      if (error) {
+        return res.status(400).json(middlewares.getFailure('token is expired'));
+      }
+      else {
+        req.decoded = decoded;
+        next();
+      }
+    })
   }
 };
 
-exports.isNotLoggedIn = (req, res, next) => {
-  if (!req.isAuthenticated()) {
-    next();
-  } else {
-    res.redirect('/');
-  }
-};
-
-exports.verifyToken = (req, res, next) => {
-  try {
-    req.decoded = jwt.verify(req.headers.authorization, process.env.JWT_SECRET);
-    return next();
-  } catch (error) {
-    if (error.name === 'TokenExpiredError') { // 유효기간 초과
-      return res.status(419).json({
-        code: 419,
-        message: '토큰이 만료되었습니다',
-      });
+middlewares.getNoSuchResource = (name, where) => {
+  return {
+    message: `no ${name}`,
+    detail: {
+      resource: name,
+      where: where,
     }
-    return res.status(401).json({
-      code: 401,
-      message: '유효하지 않은 토큰입니다',
-    });
   }
-};
+}
+
+middlewares.getValidationError = (params) => {
+  let validationError = {
+    name: 'ValidationError',
+    errors: {},
+  };
+  let isValid = true;
+  let paramNames = Object.keys(params);
+  let paramValues = Object.values(params);
+
+  for (let i = 0; i < paramNames.length; i++) {
+    if (!paramValues[i]) {
+      isValid = false;
+      validationError.errors[paramNames[i]] = {
+        message: `${paramNames[i]} is required`,
+        value: paramValues[i],
+      }
+    }
+  }
+
+  return (isValid) ? null : validationError;
+}
+module.exports = middlewares;

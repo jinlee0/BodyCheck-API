@@ -9,7 +9,7 @@ dotenv.config();
 const indexRouter = require('./routes');
 const authRouter = require('./routes/auth');
 const exerciseRouter = require('./routes/exercises');
-const variableRouther = require('./routes/variables');
+const variableRouter = require('./routes/variables');
 
 const { sequelize } = require('./models');
 const passportConfig = require('./passport');
@@ -24,6 +24,12 @@ nunjucks.configure('views', {
 });
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    res.header('Access-Control-Allow-Headers', 'content-type, bodycheck-access-token'); // JWT 로그인
+    next();
+});
 app.use(express.static(path.join(__dirname, 'public')));
 sequelize.sync({ force: false })
     .then(() => {

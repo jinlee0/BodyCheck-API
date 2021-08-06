@@ -1,5 +1,5 @@
 {
-  "name": "express-template",
+  "name": "body-check-api",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cluper-LEE/Express-Template.git"
+    "url": "git+https://github.com/cluper-LEE/BodyCheck-API.git"
   },
   "author": "Jinyong Lee (Cluper)",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/cluper-LEE/Express-Template/issues"
+    "url": "https://github.com/cluper-LEE/BodyCheck-API/issues"
   },
-  "homepage": "https://github.com/cluper-LEE/Express-Template#readme",
+  "homepage": "https://github.com/cluper-LEE/BodyCheck-API#readme",
   "devDependencies": {
     "nodemon": "^2.0.7"
   },
