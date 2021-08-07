@@ -1,6 +1,6 @@
 const express = require('express');
 const { isLoggedIn, getSuccess, getFailure, getValidationError } = require('./middlewares');
-const { Exercise, Variable, VariableType } = require('../models');
+const { Exercise, Variable, VariableType, Record } = require('../models');
 const router = express.Router();
 
 router.post('/', isLoggedIn,
@@ -15,12 +15,10 @@ router.post('/', isLoggedIn,
         else {
             next();
         }
-
     }
     , async (req, res, next) => {
         try {
             // req {name}
-
             const user = req.decoded;
             const { name } = req.body;
 
@@ -41,22 +39,50 @@ router.post('/', isLoggedIn,
 
 router.get('/', isLoggedIn, async (req, res, next) => {
     try {
-        // query(조건 여부에 따라)
-        const { UserId } = req.query;
+        // query options : { UserId, withVariables, withRecords }
+        // if (UserId) { return Exercises where UserId=UserId } else { return all Exercises }
+        // if (withVariables) { return Exercises with Variables }
+        // if (withRecords) { return Exercises with Records }
+        const { UserId, withVariables, withRecords } = req.query;
         let exercises;
+
         if (UserId) { // 
             exercises = await Exercise.findAll({
                 where: {
                     UserId,
                 },
             });
-            if (!exercises) {
-                return res.status(404).json(getFailure(`data not found, [GET] /exercises?UserId=${id}`));
+            if (exercises.length === 0) {
+                return res.status(404).json(getFailure(`data not found, [GET] /exercises?UserId=${UserId}`));
             }
         } else {
-            exercises = await Exercise.findAll();
-            if (!exercises) {
+            exercises = await Exercise.findAll({});
+            if (exercises.length === 0) {
                 return res.status(404).json(getFailure(null));
+            }
+        }
+
+        if(withVariables){
+            for(let i = 0; i < exercises.length; i++){
+                let variables = await Variable.findAll({where: {ExerciseId: exercises[i].id}});
+                exercises[i].dataValues.variables = variables;
+                if(withRecords){
+                    for(let j = 0; j < variables.length; j++){
+                        let records = await Record.findAll({where: {VariableId: variables[j].id}});
+                        variables[j].dataValues.records = records;
+                    }
+                }
+            }
+        } else {
+            if(withRecords){
+                for(let i = 0; i < exercises.length; i++){
+                    let variables = await Variable.findAll({where: {ExerciseId: exercises[i].id}});
+                    exercises[i].dataValues.records = []; // variable이 없을 경우에도 일정한 포맷으로 반환하기 위해
+                    for(let j = 0; j < variables.length; j++){
+                        let records = await Record.findAll({where: {VariableId: variables[j].id}});
+                        exercises[j].dataValues.records = records;
+                    }
+                }
             }
         }
 
@@ -88,6 +114,7 @@ router.put('/:id', isLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
         const { name } = req.query;
+
         const exercise = await Exercise.findOne({ where: { id } });
         if (!exercise) {
             res.status(404).json(getFailure(`data not found, [PUT] /exercises/${id}`));
@@ -103,14 +130,19 @@ router.put('/:id', isLoggedIn, async (req, res, next) => {
 
 router.delete('/:id', isLoggedIn, async (req, res, next) => {
     try {
+        // Exercise를 delete하더라도 Record는 유지한다.
+        // 유지되는 Record의 type을 해석하기 위해 Variable 또한 유지한다.
         const { id } = req.params;
+        
         const exercise = await Exercise.findOne({ where: { id } });
         let ret = getSuccess(exercise);
         ret.affectedRows = 0;
         if (!exercise) {
             return res.json({ ret });
         }
+
         ret.affectedRows = await Exercise.destroy({ where: { id } });
+
         return res.json({ ret });
     } catch (err) {
         console.error(err);

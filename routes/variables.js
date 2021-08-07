@@ -1,6 +1,6 @@
 const express = require('express');
 const { isLoggedIn, getSuccess, getFailure, getValidationError } = require('./middlewares');
-const { Exercise, Variable, VariableType } = require('../models');
+const { Exercise, Variable, VariableType, Record } = require('../models');
 const router = express.Router();
 
 router.post('/', isLoggedIn, 
@@ -18,6 +18,7 @@ router.post('/', isLoggedIn,
 },
     async (req, res, next) => {
         const { name, VariableTypeId, ExerciseId } = req.body;
+
         const exVariableType = await VariableType.findOne({where: {id:VariableTypeId}});
         if(!exVariableType){
             const variableTypes = await VariableType.findAll();
@@ -28,6 +29,7 @@ router.post('/', isLoggedIn,
             return res.status(404).json(getFailure(`[POST] /variables
                 VariableType: You must use one of the following list`+retStr));
         }
+
         const variable = await Variable.create({
             name,
             VariableTypeId,
@@ -36,14 +38,54 @@ router.post('/', isLoggedIn,
         if(!variable){
             return res.status(500).json(getFailure(`db error: create`));
         }
+
         return res.status(201).json(getSuccess(variable));
 });
+
+router.get('/', isLoggedIn, async (req, res, next) => {
+    try {
+        // query options : { ExerciseId, withRecords }
+        // if (ExerciseId) { return Variables where ExerciseId=ExerciseId } else { return all Variables } 
+        // if (withRecords) { return Variables with Records }
+        const { ExerciseId, withRecords } = req.query;
+        let variables;
+
+        if (ExerciseId) { // 
+            variables = await Variable.findAll({
+                where: {
+                    ExerciseId,
+                },
+            });
+            if (variables.length === 0) {
+                return res.status(404).json(getFailure(`data not found, [GET] /variables?ExerciseId=${ExerciseId}`));
+            }
+        } else {
+            variables = await Variable.findAll();
+            if (variables.length === 0) {
+                return res.status(404).json(getFailure(`data not found, [GET] /variables`));
+            }
+        }
+
+        if(withRecords){
+            for(let i = 0; i < variables.length; i++){
+                const records = await Record.findAll({where: {VariableId: variables[i].id}});
+                variables[i].setDataValue('records', records);
+            }
+        }
+
+        return res.status(200).json(getSuccess(variables));
+
+    } catch (err) {
+        console.error(err);
+        next(err);
+    }
+})
 
 router.get('/:id', isLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
-        const variable = await Variable.findOne({ where: { id } });
 
+        const variable = await Variable.findOne({ where: { id } });
         if (!variable) {
             return res.status(404).json(getFailure(`data not found, [GET] /variables/${id}`));
         }
@@ -58,11 +100,12 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
 router.put('/:id', isLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
+        const { name, VariableTypeId } = req.query;
+
         const variable = await Variable.findOne({ where: { id } });
         if (!variable) {
             return res.status(404).json(getFailure(`data not found, [PUT] /variables/${id}`));
         }
-        const { name, VariableTypeId } = req.query;
         if(!name && !VariableTypeId){
             return res.status(400).json(getFailure(`[PUT] /variables/${id}?name=${name}&VariableTypeId=${VariableTypeId}, At least one content is required`));
         }
@@ -73,10 +116,9 @@ router.put('/:id', isLoggedIn, async (req, res, next) => {
                 const variableTypes = await VariableType.findAll();
                 let retStr = '';
                 for(let i = 0; i < variableTypes.length; i++){
-                    retStr += `{ ${variableTypes[i].id}: ${variableTypes[i].name} } `;
+                    retStr += ` { ${variableTypes[i].id}: ${variableTypes[i].name} }`;
                 }
-                return res.status(404).json(getFailure(`[PUT] /variables/${id}?name=${name}&VariableTypeId=${VariableTypeId},
-                VariableType: You must use one of the following list`+retStr));
+                return res.status(404).json(getFailure(`[PUT] /variables/${id}?name=${name}&VariableTypeId=${VariableTypeId}, VariableType: You must use one of the following list`+retStr));
             }
             variable.update({VariableTypeId});
         }
@@ -84,6 +126,7 @@ router.put('/:id', isLoggedIn, async (req, res, next) => {
         if(name){
             variable.update({ name });
         }
+
         return res.json(getSuccess(variable));
     } catch (err) {
         console.error(err);
@@ -94,13 +137,16 @@ router.put('/:id', isLoggedIn, async (req, res, next) => {
 router.delete('/:id', isLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
+        
         const variable = await Variable.findOne({ where: { id } });
         let ret = getSuccess(variable);
         ret.affectedRows = 0;
         if (!variable) {
             return res.json({ ret });
         }
+
         ret.affectedRows = await Variable.destroy({ where: { id } });
+
         return res.json({ ret });
     } catch (err) {
         console.error(err);
