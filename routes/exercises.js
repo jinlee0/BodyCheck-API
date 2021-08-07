@@ -51,12 +51,12 @@ router.get('/', isLoggedIn, async (req, res, next) => {
                 },
             });
             if (!exercises) {
-                return res.status(400).json(getFailure(`there is no exercise where UserId=${id}`));
+                return res.status(404).json(getFailure(`data not found, [GET] /exercises?UserId=${id}`));
             }
         } else {
             exercises = await Exercise.findAll();
             if (!exercises) {
-                return res.status(400).json(getFailure(null));
+                return res.status(404).json(getFailure(null));
             }
         }
 
@@ -74,7 +74,7 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
         const exercise = await Exercise.findOne({ where: { id } });
 
         if (!exercise) {
-            res.status(400).json(getFailure(`there is no exercise where id=${id}`));
+            res.status(404).json(getFailure(`data not found, [GET] /exercises/${id}`));
         }
 
         return res.status(200).json(getSuccess(exercise));
@@ -90,7 +90,7 @@ router.put('/:id', isLoggedIn, async (req, res, next) => {
         const { name } = req.query;
         const exercise = await Exercise.findOne({ where: { id } });
         if (!exercise) {
-            res.status(400).json(getFailure(`there is no exercise where id=${id}`));
+            res.status(404).json(getFailure(`data not found, [PUT] /exercises/${id}`));
         }
         exercise.update({ name });
 
