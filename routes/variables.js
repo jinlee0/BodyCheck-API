@@ -1,92 +1,111 @@
 const express = require('express');
-const { isLoggedIn, isNotLoggedIn } = require('./middlewares');
+const { isLoggedIn, getSuccess, getFailure, getValidationError } = require('./middlewares');
 const { Exercise, Variable, VariableType } = require('../models');
-const e = require('express');
 const router = express.Router();
 
-router.post('/', isLoggedIn, async (req, res, next) => {
-    try {
-        // req {name, type, ExersizeId}
-        const {name, VariableTypeId, ExerciseId} = req.body;
-
-        // req 검사
-        const params = {name, VariableTypeId, ExerciseId};
-        const paramValues = Object.values(params);
-        const paramNames = Object.keys(params);
-        for(let i = 0; i < paramNames.length; i++){
-            if(!paramValues){
-                return res.status(400).json({
-                    message: `param ${paramNames[i]} is required`,
-                    detail:{
-                        location: 'body',
-                        param: paramNames[i],
-                        value: paramValues[i],
-                        error: NoParam,
-                    }
-                })
+router.post('/', isLoggedIn, 
+    async (req, res, next) => {
+        // req {name, VariableTypeId, ExersizeId}
+        const { name, VariableTypeId, ExerciseId } = req.body;
+        const params = { name, VariableTypeId, ExerciseId };
+        const validationError = getValidationError(params);
+        if (validationError) {
+            return res.status(400).json(validationError);
+        }
+        else {
+            next();
+        }
+},
+    async (req, res, next) => {
+        const { name, VariableTypeId, ExerciseId } = req.body;
+        const exVariableType = await VariableType.findOne({where: {id:VariableTypeId}});
+        if(!exVariableType){
+            const variableTypes = await VariableType.findAll();
+            let retStr = '';
+            for(let i = 0; i < variableTypes.length; i++){
+                retStr += `{ ${variableTypes[i].id}: ${variableTypes[i].name} } `;
             }
+            return res.status(404).json(getFailure(`[POST] /variables
+                VariableType: You must use one of the following list`+retStr));
         }
-
-        // type이 유효한 값인지 확인
-        if(! await VariableType.findOne({
-            where:{
-                id:VariableTypeId,
-            },
-        })){
-            return res.status(400).json({
-                message : `there is no VariableType where VariableType=${VariableTypeId}`,
-                detail: {
-                    location: 'body',
-                    param: 'VariableTypeId',
-                    value: VariableTypeId,
-                    error: 'NoSuchRecord',
-                }
-            });
-        }
-        // ExerciseId가 존재하는지 확인
-        if(! await Exercise.findOne({
-            where:{
-                id:ExerciseId,
-            },
-        })){
-            return res.status(400).json({
-                message: `there is no Exercise where ExerciseId=${ExerciseId}`,
-                detail: {
-                    location: 'body',
-                    param: 'ExerciseId',
-                    value: ExerciseId,
-                    error: 'NoSuchRecord',
-                } 
-            })
-        }
-        
         const variable = await Variable.create({
             name,
-            ExerciseId,
             VariableTypeId,
+            ExerciseId,
         });
-        
         if(!variable){
-            return res.status(500).json({
-                message: `create failed`,
-            });
+            return res.status(500).json(getFailure(`db error: create`));
         }
-        
-        return res.status(201).json(variable); // 성공시 이름만 전달 
-    } catch (err) {
-        console.error(err);
-        next(err);
-    }
+        return res.status(201).json(getSuccess(variable));
 });
 
-router.delete('/', isLoggedIn, async(req, res, next) => {
-    try{
+router.get('/:id', isLoggedIn, async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const variable = await Variable.findOne({ where: { id } });
 
-    } catch(err){
+        if (!variable) {
+            return res.status(404).json(getFailure(`data not found, [GET] /variables/${id}`));
+        }
+
+        return res.status(200).json(getSuccess(variable));
+    } catch (err) {
         console.error(err);
         next(err);
     }
 })
 
+router.put('/:id', isLoggedIn, async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const variable = await Variable.findOne({ where: { id } });
+        if (!variable) {
+            return res.status(404).json(getFailure(`data not found, [PUT] /variables/${id}`));
+        }
+        const { name, VariableTypeId } = req.query;
+        if(!name && !VariableTypeId){
+            return res.status(400).json(getFailure(`[PUT] /variables/${id}?name=${name}&VariableTypeId=${VariableTypeId}, At least one content is required`));
+        }
+
+        if(VariableTypeId){ // req.query에 VariableTypeId가 있을 경우 값이 db에 존재하는지 확인 후 업데이트
+            const exVariableType = await VariableType.findOne({where: {id:VariableTypeId}});
+            if(!exVariableType){
+                const variableTypes = await VariableType.findAll();
+                let retStr = '';
+                for(let i = 0; i < variableTypes.length; i++){
+                    retStr += `{ ${variableTypes[i].id}: ${variableTypes[i].name} } `;
+                }
+                return res.status(404).json(getFailure(`[PUT] /variables/${id}?name=${name}&VariableTypeId=${VariableTypeId},
+                VariableType: You must use one of the following list`+retStr));
+            }
+            variable.update({VariableTypeId});
+        }
+
+        if(name){
+            variable.update({ name });
+        }
+        return res.json(getSuccess(variable));
+    } catch (err) {
+        console.error(err);
+        next(err);
+    }
+})
+
+router.delete('/:id', isLoggedIn, async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const variable = await Variable.findOne({ where: { id } });
+        let ret = getSuccess(variable);
+        ret.affectedRows = 0;
+        if (!variable) {
+            return res.json({ ret });
+        }
+        ret.affectedRows = await Variable.destroy({ where: { id } });
+        return res.json({ ret });
+    } catch (err) {
+        console.error(err);
+        next(err);
+    }
+})
 
 module.exports = router;
