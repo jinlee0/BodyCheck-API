@@ -1,6 +1,7 @@
 const express = require("express");
 const session = require('express-session');
 const path = require('path');
+const morgan = require('morgan');
 const nunjucks = require('nunjucks');
 const dotenv = require('dotenv');
 const passport = require('passport');
@@ -23,6 +24,7 @@ nunjucks.configure('views', {
     express: app,
     watch: true,
 });
+app.use(morgan('dev'));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use((req, res, next) => {
