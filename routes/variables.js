@@ -57,12 +57,12 @@ router.get('/', isLoggedIn, async (req, res, next) => {
                 },
             });
             if (variables.length === 0) {
-                return res.status(404).json(getFailure(`data not found, [GET] /variables?ExerciseId=${ExerciseId}`));
+                return res.status(404).json(getFailure(req.originalUrl));
             }
         } else {
             variables = await Variable.findAll();
             if (variables.length === 0) {
-                return res.status(404).json(getFailure(`data not found, [GET] /variables`));
+                return res.status(404).json(getFailure(req.originalUrl));
             }
         }
 
@@ -87,7 +87,7 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
 
         const variable = await Variable.findOne({ where: { id } });
         if (!variable) {
-            return res.status(404).json(getFailure(`data not found, [GET] /variables/${id}`));
+            return res.status(404).json(getFailure(req.originalUrl));
         }
 
         return res.status(200).json(getSuccess(variable));
@@ -104,10 +104,23 @@ router.put('/:id', isLoggedIn, async (req, res, next) => {
 
         const variable = await Variable.findOne({ where: { id } });
         if (!variable) {
-            return res.status(404).json(getFailure(`data not found, [PUT] /variables/${id}`));
+            return res.status(404).json(getFailure(req.originalUrl));
         }
+
+        // 하나라도 없으면 400 Bad request
         if(!name && !VariableTypeId){
-            return res.status(400).json(getFailure(`[PUT] /variables/${id}?name=${name}&VariableTypeId=${VariableTypeId}, At least one content is required`));
+            return res.status(400).json(getFailure(`${req.originalUrl} At least one content is required`));
+        }
+
+        // 기존 데이터과 같다면 204 No Content
+        let obj = {
+            id: variable.getDataValue('id'),
+            name: (name) ? name : variable.getDataValue('name'),
+            ExerciseId: variable.getDataValue('ExerciseId'),
+            VariableTypeId: (VariableTypeId) ? VariableTypeId*1 : variable.getDataValue('VariableTypeId'),
+        }
+        if(JSON.stringify(obj) == JSON.stringify(variable.dataValues)){
+            return res.status(204).json();
         }
 
         if(VariableTypeId){ // req.query에 VariableTypeId가 있을 경우 값이 db에 존재하는지 확인 후 업데이트
@@ -118,16 +131,16 @@ router.put('/:id', isLoggedIn, async (req, res, next) => {
                 for(let i = 0; i < variableTypes.length; i++){
                     retStr += ` { ${variableTypes[i].id}: ${variableTypes[i].name} }`;
                 }
-                return res.status(404).json(getFailure(`[PUT] /variables/${id}?name=${name}&VariableTypeId=${VariableTypeId}, VariableType: You must use one of the following list`+retStr));
+                return res.status(404).json(getFailure(`${req.originalUrl} VariableType: You must use one of the following list`+retStr));
             }
-            variable.update({VariableTypeId});
+            await variable.update({VariableTypeId});
         }
 
         if(name){
-            variable.update({ name });
+            await variable.update({ name });
         }
 
-        return res.json(getSuccess(variable));
+        return res.status(201).json(getSuccess(variable));
     } catch (err) {
         console.error(err);
         next(err);
@@ -139,15 +152,13 @@ router.delete('/:id', isLoggedIn, async (req, res, next) => {
         const { id } = req.params;
         
         const variable = await Variable.findOne({ where: { id } });
-        let ret = getSuccess(variable);
-        ret.affectedRows = 0;
         if (!variable) {
-            return res.json({ ret });
+            return res.status(404).json(getFailure(`there is no vairable where id=${id}`));
         }
 
-        ret.affectedRows = await Variable.destroy({ where: { id } });
+        await variable.destroy();
 
-        return res.json({ ret });
+        return res.status(204).json();
     } catch (err) {
         console.error(err);
         next(err);

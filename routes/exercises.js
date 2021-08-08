@@ -117,11 +117,16 @@ router.put('/:id', isLoggedIn, async (req, res, next) => {
 
         const exercise = await Exercise.findOne({ where: { id } });
         if (!exercise) {
-            res.status(404).json(getFailure(`data not found, [PUT] /exercises/${id}`));
+            return res.status(404).json(getFailure(`data not found, [PUT] /exercises/${id}`));
         }
-        exercise.update({ name });
 
-        return res.json(getSuccess(exercise));
+        if(name == exercise.getDataValue('name')){
+            return res.status(204).json();
+        }
+    
+        await exercise.update({ name });
+
+        return res.status(201).json(getSuccess(exercise));
     } catch (err) {
         console.error(err);
         next(err);
@@ -135,15 +140,13 @@ router.delete('/:id', isLoggedIn, async (req, res, next) => {
         const { id } = req.params;
         
         const exercise = await Exercise.findOne({ where: { id } });
-        let ret = getSuccess(exercise);
-        ret.affectedRows = 0;
         if (!exercise) {
-            return res.json({ ret });
+            return res.status(404).json(`there is no exercise where id=${id}`);
         }
 
-        ret.affectedRows = await Exercise.destroy({ where: { id } });
+        await exercise.destroy();
 
-        return res.json({ ret });
+        return res.status(204).json();
     } catch (err) {
         console.error(err);
         next(err);
