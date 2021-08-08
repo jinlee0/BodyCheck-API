@@ -27,12 +27,12 @@ middlewares.getFailure = (message) => {
 middlewares.isLoggedIn = (req, res, next) => {
   const token = req.headers['bodycheck-access-token'];
   if (!token) {
-    return res.status(400).json(middlewares.getFailure('token is required'));
+    return res.status(401).json(middlewares.getFailure('token is required'));
   }
   else {
     jwt.verify(token, process.env.JWT_SECRET, (error, decoded) => {
       if (error) {
-        return res.status(400).json(middlewares.getFailure('token is expired'));
+        return res.status(401).json(middlewares.getFailure('token is expired'));
       }
       else {
         req.decoded = decoded;
