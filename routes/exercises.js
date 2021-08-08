@@ -1,6 +1,6 @@
 const express = require('express');
 const { isLoggedIn, getSuccess, getFailure, getValidationError } = require('./middlewares');
-const { Exercise, Variable, VariableType, Record } = require('../models');
+const { Exercise, Variable, Record } = require('../models');
 const router = express.Router();
 
 router.post('/', isLoggedIn,
