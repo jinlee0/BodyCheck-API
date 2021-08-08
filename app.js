@@ -10,6 +10,7 @@ const indexRouter = require('./routes');
 const authRouter = require('./routes/auth');
 const exerciseRouter = require('./routes/exercises');
 const variableRouter = require('./routes/variables');
+const userRouter = require('./routes/users');
 
 const { sequelize } = require('./models');
 const passportConfig = require('./passport');
@@ -55,6 +56,7 @@ app.use('/', indexRouter);
 app.use('/auth', authRouter);
 app.use('/exercises', exerciseRouter);
 app.use('/variables', variableRouter);
+app.use('/users', userRouter);
 
 app.listen(app.get('port'), () => {
     console.log(app.get('port'), '번 포트 활성화');
