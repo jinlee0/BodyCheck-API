@@ -9,7 +9,7 @@ dotenv.config();
 const indexRouter = require('./routes');
 const authRouter = require('./routes/auth');
 const exerciseRouter = require('./routes/exercises');
-const variableRouther = require('./routes/variables');
+const variableRouter = require('./routes/variables');
 
 const { sequelize } = require('./models');
 const passportConfig = require('./passport');
