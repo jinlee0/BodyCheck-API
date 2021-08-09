@@ -17,7 +17,7 @@ module.exports = class User extends Sequelize.Model {
         }, {
             sequelize,
             timestamps: true, // 레코드 생성, 수정 시간 기록 컬럼 자동 생성
-            underscored: false, // 뭐더라
+            underscored: false, 
             modelName: 'User',
             tableName: 'users',
             paranoid: true, // 레코드 삭제 시간 기록 컬럼 자동 생성
@@ -28,6 +28,7 @@ module.exports = class User extends Sequelize.Model {
 
     static associate(db) {
         // 관계
+        db.User.hasMany(db.UserProfile);
         db.User.hasMany(db.Domain);
         db.User.hasMany(db.Exercise);
     }

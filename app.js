@@ -1,6 +1,7 @@
 const express = require("express");
 const session = require('express-session');
 const path = require('path');
+const morgan = require('morgan');
 const nunjucks = require('nunjucks');
 const dotenv = require('dotenv');
 const passport = require('passport');
@@ -10,6 +11,7 @@ const indexRouter = require('./routes');
 const authRouter = require('./routes/auth');
 const exerciseRouter = require('./routes/exercises');
 const variableRouter = require('./routes/variables');
+const userRouter = require('./routes/users');
 
 const { sequelize } = require('./models');
 const passportConfig = require('./passport');
@@ -22,8 +24,15 @@ nunjucks.configure('views', {
     express: app,
     watch: true,
 });
+app.use(morgan('dev'));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    res.header('Access-Control-Allow-Headers', 'content-type, bodycheck-access-token'); // JWT 로그인
+    next();
+});
 app.use(express.static(path.join(__dirname, 'public')));
 sequelize.sync({ force: false })
     .then(() => {
@@ -49,6 +58,7 @@ app.use('/', indexRouter);
 app.use('/auth', authRouter);
 app.use('/exercises', exerciseRouter);
 app.use('/variables', variableRouter);
+app.use('/users', userRouter);
 
 app.listen(app.get('port'), () => {
     console.log(app.get('port'), '번 포트 활성화');
