@@ -25,8 +25,8 @@ router.post('/', isLoggedIn,
             let retStr = '';
             for(let i = 0; i < variableTypes.length; i++){
                 retStr += `{ ${variableTypes[i].id}: ${variableTypes[i].name} } `;
-            }
-            return res.status(404).json(getFailure(`[POST] /variables
+            }   
+            return res.status(404).json(getFailure(`${req.originalUrl}
                 VariableType: You must use one of the following list`+retStr));
         }
 
@@ -97,7 +97,7 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
     }
 })
 
-router.put('/:id', isLoggedIn, async (req, res, next) => {
+router.patch('/:id', isLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
         const { name, VariableTypeId } = req.query;
@@ -112,7 +112,7 @@ router.put('/:id', isLoggedIn, async (req, res, next) => {
             return res.status(400).json(getFailure(`${req.originalUrl} At least one content is required`));
         }
 
-        // 기존 데이터과 같다면 204 No Content
+        // 기존 데이터과 같다면 204 No Contents
         let obj = {
             id: variable.getDataValue('id'),
             name: (name) ? name : variable.getDataValue('name'),
