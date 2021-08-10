@@ -73,7 +73,7 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
     }
 })
 
-router.put('/:id', isLoggedIn, async (req, res, next) => {
+router.patch('/:id', isLoggedIn, async (req, res, next) => {
     try {
         // params: id
         // query: email
