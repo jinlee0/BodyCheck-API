@@ -55,6 +55,8 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
                 paranoid = true;
             } else if (paranoid === 'false' || paranoid === '0'){
                 paranoid = false;
+            } else {
+                return res.status(400).json(getFailure(req.originalUrl + ' paranoid: true/false/1/0'));
             }
         }
         const user = await User.findOne({
@@ -80,8 +82,7 @@ router.patch('/:id', isLoggedIn, async (req, res, next) => {
         // query : {email}
         // body : {password}
         const {id} = req.params;
-        const {email} = req.query;
-        const {password} = req.body;
+        const {email, password} = req.body;
         
         if(!email && !password){
             return res.status(400).json(getFailure(req.originalUrl));
@@ -127,6 +128,7 @@ router.patch('/:id', isLoggedIn, async (req, res, next) => {
             where:{id},
             attributes: {exclude:['password']},
         });
+
         return res.status(201).json(getSuccess(updated));
     } catch (err) {
         console.error(err);
@@ -140,7 +142,6 @@ router.delete('/:id', isLoggedIn, async (req, res, next) => {
         
         const user = await User.findOne({ 
             where: { id },
-            attributes: {exclude: ['password']},
         });
         if (!user) {
             return res.status(404).json(getFailure(req.originalUrl));

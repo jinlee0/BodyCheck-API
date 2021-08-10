@@ -1,6 +1,6 @@
 const express = require('express');
 const { isLoggedIn, getSuccess, getFailure, getValidationError } = require('./middlewares');
-const { Exercise, Variable, Record } = require('../models');
+const { Exercise, Variable, Record, User } = require('../models');
 const router = express.Router();
 
 router.post('/', isLoggedIn,
@@ -20,6 +20,11 @@ router.post('/', isLoggedIn,
         try {
             // req {name}
             const { name, UserId } = req.body;
+
+            const user = await User.findOne({where: {id:UserId}});
+            if(!user){
+                return res.status(404).json(getFailure(req.originalUrl + ' UserId'));
+            }
 
             const exercise = await Exercise.create({
                 name,
@@ -112,7 +117,7 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
 router.patch('/:id', isLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { name } = req.query;
+        const { name } = req.body;
 
         const exercise = await Exercise.findOne({ where: { id } });
         if (!exercise) {
