@@ -26,7 +26,7 @@ router.get('/', isLoggedIn, async (req, res, next) => {
                 paranoid,
             });
             if(!user){
-                return res.status(404).json(getFailure(req.originalUrl));
+                return res.status(204).json();
             }
             return res.status(200).json(getSuccess(user));
         }

@@ -57,12 +57,12 @@ router.get('/', isLoggedIn, async (req, res, next) => {
                 },
             });
             if (variables.length === 0) {
-                return res.status(404).json(getFailure(req.originalUrl));
+                return res.status(204).json();
             }
         } else {
             variables = await Variable.findAll();
             if (variables.length === 0) {
-                return res.status(404).json(getFailure(req.originalUrl));
+                return res.status(204).json();
             }
         }
 
