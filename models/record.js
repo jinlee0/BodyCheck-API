@@ -23,5 +23,6 @@ module.exports = class Record extends Sequelize.Model {
     static associate(db) {
         // 관계
         db.Record.belongsTo(db.Variable);
+        db.Record.belongsTo(db.DateRecord);
     }
 };
