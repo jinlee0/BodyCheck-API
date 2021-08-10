@@ -53,7 +53,7 @@ router.get('/', isLoggedIn, async (req, res, next) => {
                 },
             });
             if (exercises.length === 0) {
-                return res.status(404).json(getFailure(`data not found, [GET] /exercises?UserId=${UserId}`));
+                return res.status(404).json(getFailure(req.originalUrl));
             }
         } else {
             exercises = await Exercise.findAll({});
@@ -100,7 +100,7 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
         const exercise = await Exercise.findOne({ where: { id } });
 
         if (!exercise) {
-            res.status(404).json(getFailure(`data not found, [GET] /exercises/${id}`));
+            res.status(404).json(getFailure(req.originalUrl));
         }
 
         return res.status(200).json(getSuccess(exercise));
@@ -110,14 +110,14 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
     }
 })
 
-router.put('/:id', isLoggedIn, async (req, res, next) => {
+router.patch('/:id', isLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
         const { name } = req.query;
 
         const exercise = await Exercise.findOne({ where: { id } });
         if (!exercise) {
-            return res.status(404).json(getFailure(`data not found, [PUT] /exercises/${id}`));
+            return res.status(404).json(getFailure(req.originalUrl));
         }
 
         if(name == exercise.getDataValue('name')){
@@ -141,7 +141,7 @@ router.delete('/:id', isLoggedIn, async (req, res, next) => {
         
         const exercise = await Exercise.findOne({ where: { id } });
         if (!exercise) {
-            return res.status(404).json(`there is no exercise where id=${id}`);
+            return res.status(404).json(req.originalUrl);
         }
 
         await exercise.destroy();
