@@ -2,147 +2,110 @@ const router = express.Router();
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
-const fs = require("fs");
-const AWS = require("aws-sdk");
-const multerS3 = require("multer-s3");
 
 const { File, DateRecord } = require("../models");
-const { findByPk } = require("../models/record");
+const { findByPk } = require("../models/dateRecords");
 
 
-AWS.config.update({
-  accessKeyId: process.env.S3_ACCESS_KEY_ID,
-  secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-  region: "ap-northeast-2",
+let storage = multer.diskStorage({
+  destination: function(req, file ,callback){
+      callback(null, "upload/")
+  },
+  filename: function(req, file, callback){
+      let extension = path.extname(file.originalname);
+      let basename = path.basename(file.originalname, extension);
+      callback(null, basename + "-" + Date.now() + extension);
+  }
 });
-const s3 = new AWS.S3();
 
-var upload = multer({
-  storage: multerS3({
-    s3,
-    bucket: "sotabodycheck",
-    key(req, file, cb) {
-      const fileType =
-        file.mimetype.split("/")[file.mimetype.split("/").length - 1];
-      if (fileType == "image") {
-        console.log("imageFile upload.");
-        cb(null, `images/${Date.now()}${path.basename(file.originalname)}`);
-      } else if (fileType == "video") {
-        console.log("videoFile upload.");
-        cb(null, `videos/${Date.now()}${path.basename(file.originalname)}`);
-      } else {
-        console.log("documentFile upload.");
-        cb(null, `documents/${Date.now()}${path.basename(file.originalname)}`);
-      }
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, 'uploads/');
     },
+    filename: function (req, file, cb) {
+      cb(null, new Date().valueOf() + path.extname(file.originalname));
+    }
   }),
 });
 
-// Read
-router.get(
-  "/read/:id",
-  async (req, res, next) => {
-    try {
-      let files = await File.findAll({
-        where: { dateRecord_id: req.params.id },
-      });
-      res.json(files);
-    } catch (error) {
-      console.error(error);
-      next(error);
-    }
-  }
-);
-
-// Create
-router.post(
-  "/upload/:id",
-  upload.array("files"),
-  async (req, res) => {
-    console.log(req.files);
-
-    // const urls = [];
-    let fileType, url, originalUrl;
-    let record = await DateRecord.findOne({
-      where: { id: req.params.id },
-      include: [File],
+// read
+router.get('/', function(req, res, next) {
+  try {
+    let file = await File.findAll({
+      where: { dateRecord_id: req.body.id },
     });
-    req.files.map(async (file) => {
-      fileType = file.mimetype.split("/")[file.mimetype.split("/").length - 1];
-      if (fileType == "image") {
-        originalUrl = file.location;
-        url = originalUrl.replace(/\/images\//, "/thumb/");
-
-        console.log(originalUrl);
-        onsole.log(url);
-      } else {
-        url = file.location;
-        originalUrl = file.location;
-
-        console.log(originalUrl);
-        console.log(url);
-      }
-
-      const uploaded = await File.create({
-        file_type: fileType,
-        original_url: originalUrl,
-        url: url,
-        description: req.body.description,
-      });
-      record = await DateRecord.addFile(uploaded);
-    });
-    console.log(record.Files);
-
-    res.json(record.files);
-  }
-);
-
-// Delete
-router.delete(
-  "/delete/:fileId",
-  async (req, res, next) => {
-    try {
-      const file = await File.findByPk(req.params.fileId);
-      const url = file.url.split("/"); // file에 저장된 fileUrl을 가져옴
-      const originalUrl = file.original_url;
-
-      const delFileName = url[url.length - 1]; // 버킷에 저장된 객체 URL만 가져옴
-      const params = {
-        Bucket: "sotabodycheck/documents",
-        Key: delFileName,
-      };
-      if (file.file_type === "image") {
-        await s3.deleteObject(params, function (err, data) {
-          if (err) {
-            console.log("aws delete error");
-            console.log(err, err.stack);
-            res.redirect("/");
-          } else {
-            console.log("aws delete success" + data);
-          }
-          console.log("리사이즈 파일 삭제");
-        });
-      }
-      await s3.deleteObject(params, function (err, data) {
-        if (err) {
-          console.log("aws delete error");
-          console.log(err, err.stack);
-          res.redirect("/");
-        } else {
-          console.log("aws delete success" + data);
-        }
-      });
-      const deleted = await File.destroy({
-        where: { id: req.params.fileId },
-      });
-
-      console.log("파일 삭제");
-      res.json(deleted);
-    } catch (err) {
-      console.error(err);
-      next(err);
+    if (!file) {
+      return res.status(404).json(getFailure(req.originalUrl));
     }
+
+    return res.status(201).json(getSuccess(upload));
+  } catch(error) {
+    console.error(error);
+    next(error);
   }
-);
+});
+
+// upload
+router.post('/', upload.single("img"), function(req, res, next) {
+  // 크기제한 (100MB)
+  // multer({ dest: 'uploads/', limits: { fileSize: 100 * 1024 * 1024 } });
+  try {
+    let file = req.file
+    let originalUrl = file.location;
+    let fileType = file.mimetype.split("/")[file.mimetype.split("/").length - 1];
+
+    let record = await DateRecord.findByPk(res.body.id);
+    if (!record) {
+      return res.status(404).json(getFailure(req.originalUrl));
+    }
+
+    const upload = await File.create({
+      file_type: fileType,
+      size: file.size,
+      original_url: originalUrl,
+      description: req.body.description,
+    });
+    if (!upload) {
+      return res.status(500).json(getFailure(`db error: create`));
+    }
+    record = await record.addFild(upload);
+    return res.status(201).json(getSuccess(upload));
+  } catch(error) {
+    console.error(error);
+    next(error);
+  }
+});
+
+// update
+router.post('/', upload.single("img"), function(req, res, next) {
+  try {
+    let file = req.file
+    let originalUrl = file.location;
+    let fileType = file.mimetype.split("/")[file.mimetype.split("/").length - 1];
+
+    let record = await DateRecord.findByPk(res.body.id);
+    if (!record) {
+      return res.status(404).json(getFailure(req.originalUrl));
+    }
+
+    const update = await File.update({
+      file_type: fileType,
+      size: file.size,
+      original_url: originalUrl,
+      description: req.body.description,
+    });
+    if (!upload) {
+      return res.status(500).json(getFailure(`db error: create`));
+    }
+    record = await record.addFild(upload);
+    return res.status(201).json(getSuccess(upload));
+  } catch(error) {
+    console.error(error);
+    next(error);
+  }
+});
+
+
 
 module.exports = router;

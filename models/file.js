@@ -5,8 +5,8 @@ module.exports = class File extends Sequelize.Model {
     return super.init(
       {
         file_type: { type: Sequelize.STRING(45), allowNull: true },
-        url: {
-          type: Sequelize.STRING(200),
+        size: {
+          type: Sequelize.STRING(45),
           allowNull: true,
         },
         origin_url: {
