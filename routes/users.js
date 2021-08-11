@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcrypt');
 const { isLoggedIn, getSuccess, getFailure, getValidationError } = require('./middlewares');
 const { User, Variable, VariableType, Record } = require('../models');
 const router = express.Router();
@@ -25,7 +26,7 @@ router.get('/', isLoggedIn, async (req, res, next) => {
                 paranoid,
             });
             if(!user){
-                return res.status(404).json(getFailure(req.originalUrl));
+                return res.status(204).json();
             }
             return res.status(200).json(getSuccess(user));
         }
@@ -54,6 +55,8 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
                 paranoid = true;
             } else if (paranoid === 'false' || paranoid === '0'){
                 paranoid = false;
+            } else {
+                return res.status(400).json(getFailure(req.originalUrl + ' paranoid: true/false/1/0'));
             }
         }
         const user = await User.findOne({
@@ -76,38 +79,57 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
 router.patch('/:id', isLoggedIn, async (req, res, next) => {
     try {
         // params: id
-        // query: email
+        // query : {email}
+        // body : {password}
         const {id} = req.params;
-        const {email} = req.query;
-        if(!email){
+        const {email, password} = req.body;
+        
+        if(!email && !password){
             return res.status(400).json(getFailure(req.originalUrl));
         }
 
         const user = await User.findOne({
             where: {id},
-            attributes: {exclude: ['password']},
         });
         if(!user){
             return res.status(404).json(getFailure(req.originalUrl));
         }
 
         // 바꿀 게 없으면
-        if(email == user.getDataValue('email')){
+        let isSame = true;
+        if(email){
+            // email을 받았는데 기존과 다른 경우
+            if(!(email == user.getDataValue('email'))){
+                isSame = false;
+                const exUser = await User.findOne({
+                    where: {email},
+                    paranoid: false,
+                });
+                if(exUser){ // email은 유일해야 한다.
+                    return res.status(400).json(req.originalUrl + ' The email already exists. Email must be unique');
+                }
+                await user.update({email});
+            }
+        }
+        if(password){
+            const result = await bcrypt.compare(password, user.password);
+            if(!result){ // password를 받았는데 기존과 다른 경우
+                isSame = false;
+                const hash = await bcrypt.hash(password, 12);
+                await user.update({password: hash});
+            }
+        }
+
+        if(isSame){
             return res.status(204).json();
         }
 
-        const exUser = await User.findOne({
-            where: {email},
-            paranoid: false,
+        const updated = await User.findOne({
+            where:{id},
+            attributes: {exclude:['password']},
         });
-        console.log(exUser);
-        if(exUser){
-            return res.status(400).json(req.originalUrl + ' The email already exists. Email must be unique');
-        }
 
-        await user.update({email});
-
-        return res.status(201).json(getSuccess(user));
+        return res.status(201).json(getSuccess(updated));
     } catch (err) {
         console.error(err);
         next(err);
@@ -120,7 +142,6 @@ router.delete('/:id', isLoggedIn, async (req, res, next) => {
         
         const user = await User.findOne({ 
             where: { id },
-            attributes: {exclude: ['password']},
         });
         if (!user) {
             return res.status(404).json(getFailure(req.originalUrl));

@@ -22,6 +22,25 @@ middlewares.getFailure = (message) => {
   }
 }
 
+middlewares.updateForEach = async (record, fields) => {
+  const keys = Object.keys(fields);
+  const values = Object.values(fields);
+  let obj = new Object();
+  let isSame = true;
+  for(let i = 0; i < keys.length; i++){
+    if(values[i]){
+      if(values[i] != record.getDataValue(keys[i])){
+        isSame = false;
+        obj[keys[i]] = values[i];
+      }
+    }
+  }
+  if(!isSame){
+    await record.update(obj);
+  }
+  return isSame;
+}
+
 
 // middlewares
 middlewares.isLoggedIn = (req, res, next) => {

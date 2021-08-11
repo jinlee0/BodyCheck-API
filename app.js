@@ -11,6 +11,7 @@ const authRouter = require('./routes/auth');
 const exerciseRouter = require('./routes/exercises');
 const variableRouter = require('./routes/variables');
 const userRouter = require('./routes/users');
+const userProfileRouter = require('./routes/userProfiles');
 
 const { sequelize } = require('./models');
 
@@ -26,7 +27,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE');
     res.header('Access-Control-Allow-Headers', 'content-type, bodycheck-access-token'); // JWT 로그인
     next();
 });
@@ -54,6 +55,7 @@ app.use('/auth', authRouter);
 app.use('/exercises', exerciseRouter);
 app.use('/variables', variableRouter);
 app.use('/users', userRouter);
+app.use('/userProfiles', userProfileRouter);
 
 app.listen(app.get('port'), () => {
     console.log(app.get('port'), '번 포트 활성화');
