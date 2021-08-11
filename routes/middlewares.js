@@ -28,7 +28,7 @@ middlewares.updateForEach = async (record, fields) => {
   let obj = new Object();
   let isSame = true;
   for(let i = 0; i < keys.length; i++){
-    if(values[i]){
+    if(values[i] !== undefined){
       if(values[i] != record.getDataValue(keys[i])){
         isSame = false;
         obj[keys[i]] = values[i];
