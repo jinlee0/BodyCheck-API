@@ -4,7 +4,6 @@ const path = require('path');
 const morgan = require('morgan');
 const nunjucks = require('nunjucks');
 const dotenv = require('dotenv');
-const passport = require('passport');
 
 dotenv.config();
 const indexRouter = require('./routes');
@@ -12,13 +11,12 @@ const authRouter = require('./routes/auth');
 const exerciseRouter = require('./routes/exercises');
 const variableRouter = require('./routes/variables');
 const userRouter = require('./routes/users');
+const userProfileRouter = require('./routes/userProfiles');
 const fileRouter = require('./routes/files');
 
 const { sequelize } = require('./models');
-const passportConfig = require('./passport');
 
 const app = express();
-passportConfig(); // 패스포트 설정
 app.set('port', process.env.PORT || 5001);
 app.set('view engine', 'html');
 nunjucks.configure('views', {
@@ -30,7 +28,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE');
     res.header('Access-Control-Allow-Headers', 'content-type, bodycheck-access-token'); // JWT 로그인
     next();
 });
@@ -52,14 +50,13 @@ app.use(session({
         secure: false,
     },
 }));
-app.use(passport.initialize()); // req에 passport 추가
-app.use(passport.session()); // req.session에 passport 저장, session()보다 뒤에 있어야 함.
 
 app.use('/', indexRouter);
 app.use('/auth', authRouter);
 app.use('/exercises', exerciseRouter);
 app.use('/variables', variableRouter);
 app.use('/users', userRouter);
+app.use('/userProfiles', userProfileRouter);
 app.use('/files', fileRouter);
 
 app.listen(app.get('port'), () => {

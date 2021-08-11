@@ -1,5 +1,5 @@
 const express = require('express');
-const { isLoggedIn, getSuccess, getFailure, getValidationError } = require('./middlewares');
+const { isLoggedIn, getSuccess, getFailure, getValidationError, updateForEach } = require('./middlewares');
 const { Variable, VariableType, Record } = require('../models');
 const router = express.Router();
 
@@ -7,7 +7,7 @@ router.post('/', isLoggedIn,
     async (req, res, next) => {
         // req {name, VariableTypeId, ExersizeId}
         const { name, VariableTypeId, ExerciseId } = req.body;
-        const params = { name, VariableTypeId, ExerciseId };
+        const params = { name, VariableTypeId, ExerciseId};
         const validationError = getValidationError(params);
         if (validationError) {
             return res.status(400).json(validationError);
@@ -25,8 +25,8 @@ router.post('/', isLoggedIn,
             let retStr = '';
             for(let i = 0; i < variableTypes.length; i++){
                 retStr += `{ ${variableTypes[i].id}: ${variableTypes[i].name} } `;
-            }
-            return res.status(404).json(getFailure(`[POST] /variables
+            }   
+            return res.status(404).json(getFailure(`${req.originalUrl}
                 VariableType: You must use one of the following list`+retStr));
         }
 
@@ -57,12 +57,12 @@ router.get('/', isLoggedIn, async (req, res, next) => {
                 },
             });
             if (variables.length === 0) {
-                return res.status(404).json(getFailure(req.originalUrl));
+                return res.status(204).json();
             }
         } else {
             variables = await Variable.findAll();
             if (variables.length === 0) {
-                return res.status(404).json(getFailure(req.originalUrl));
+                return res.status(204).json();
             }
         }
 
@@ -97,10 +97,10 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
     }
 })
 
-router.put('/:id', isLoggedIn, async (req, res, next) => {
+router.patch('/:id', isLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { name, VariableTypeId } = req.query;
+        const { name, VariableTypeId } = req.body;
 
         const variable = await Variable.findOne({ where: { id } });
         if (!variable) {
@@ -112,16 +112,7 @@ router.put('/:id', isLoggedIn, async (req, res, next) => {
             return res.status(400).json(getFailure(`${req.originalUrl} At least one content is required`));
         }
 
-        // 기존 데이터과 같다면 204 No Content
-        let obj = {
-            id: variable.getDataValue('id'),
-            name: (name) ? name : variable.getDataValue('name'),
-            ExerciseId: variable.getDataValue('ExerciseId'),
-            VariableTypeId: (VariableTypeId) ? VariableTypeId*1 : variable.getDataValue('VariableTypeId'),
-        }
-        if(JSON.stringify(obj) == JSON.stringify(variable.dataValues)){
-            return res.status(204).json();
-        }
+        // 기존 데이터과 같다면 204 No Contents
 
         if(VariableTypeId){ // req.query에 VariableTypeId가 있을 경우 값이 db에 존재하는지 확인 후 업데이트
             const exVariableType = await VariableType.findOne({where: {id:VariableTypeId}});
@@ -133,12 +124,13 @@ router.put('/:id', isLoggedIn, async (req, res, next) => {
                 }
                 return res.status(404).json(getFailure(`${req.originalUrl} VariableType: You must use one of the following list`+retStr));
             }
-            await variable.update({VariableTypeId});
         }
 
-        if(name){
-            await variable.update({ name });
+        const isSame = await updateForEach(variable, {name, VariableTypeId});
+        if(isSame){
+            return res.status(204).json();
         }
+        
 
         return res.status(201).json(getSuccess(variable));
     } catch (err) {
