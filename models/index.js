@@ -26,6 +26,7 @@ db.User = User;
 db.UserProfile = UserProfile;
 db.Variable = Variable;
 db.VariableType = VariableType;
+db.File = File;
 
 // 모델 생성
 DateRecord.init(sequelize);
@@ -36,6 +37,7 @@ User.init(sequelize);
 UserProfile.init(sequelize);
 Variable.init(sequelize);
 VariableType.init(sequelize);
+File.init(sequelize);
 
 // 모델 관계 설정
 DateRecord.associate(db);
@@ -46,5 +48,6 @@ User.associate(db);
 UserProfile.associate(db);
 Variable.associate(db);
 VariableType.associate(db);
+File.associate(db);
 
 module.exports = db;
