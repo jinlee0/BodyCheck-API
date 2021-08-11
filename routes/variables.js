@@ -7,7 +7,7 @@ router.post('/', isLoggedIn,
     async (req, res, next) => {
         // req {name, VariableTypeId, ExersizeId}
         const { name, VariableTypeId, ExerciseId } = req.body;
-        const params = { name, VariableTypeId, ExerciseId };
+        const params = { name, VariableTypeId, ExerciseId};
         const validationError = getValidationError(params);
         if (validationError) {
             return res.status(400).json(validationError);
