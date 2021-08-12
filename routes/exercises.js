@@ -1,12 +1,12 @@
 const express = require('express');
 const { isLoggedIn, getSuccess, getFailure, getValidationError } = require('./middlewares');
-const { Exercise, Variable, Record } = require('../models');
+const { Exercise, Variable, Record, User } = require('../models');
 const router = express.Router();
 
 router.post('/', isLoggedIn,
     async (req, res, next) => {
-        const { name } = req.body;
-        const params = { name };
+        const { name, UserId } = req.body;
+        const params = { name, UserId };
         const validationError = getValidationError(params);
 
         if (validationError) {
@@ -19,12 +19,16 @@ router.post('/', isLoggedIn,
     , async (req, res, next) => {
         try {
             // req {name}
-            const user = req.decoded;
-            const { name } = req.body;
+            const { name, UserId } = req.body;
+
+            const user = await User.findOne({where: {id:UserId}});
+            if(!user){
+                return res.status(404).json(getFailure(req.originalUrl + ' UserId'));
+            }
 
             const exercise = await Exercise.create({
                 name,
-                UserId: user.id,
+                UserId,
             });
             if (!exercise) {
                 return res.status(500).json(getFailure('db error'));
@@ -53,12 +57,12 @@ router.get('/', isLoggedIn, async (req, res, next) => {
                 },
             });
             if (exercises.length === 0) {
-                return res.status(404).json(getFailure(req.originalUrl));
+                return res.status(204).json();
             }
         } else {
             exercises = await Exercise.findAll({});
             if (exercises.length === 0) {
-                return res.status(404).json(getFailure(null));
+                return res.status(204).json();
             }
         }
 
@@ -113,7 +117,7 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
 router.patch('/:id', isLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { name } = req.query;
+        const { name } = req.body;
 
         const exercise = await Exercise.findOne({ where: { id } });
         if (!exercise) {

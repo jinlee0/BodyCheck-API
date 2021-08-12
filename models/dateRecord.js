@@ -32,5 +32,11 @@ module.exports = class DateRecord extends Sequelize.Model {
     static associate(db) {
         // 관계
         db.DateRecord.hasMany(db.Record);
+
+        // DateRecord - File (1:n)
+        db.DateRecord.hasMany(db.File, {
+            foreignKey: "dateRecord_id",
+            sourceKey: "id",
+        });
     }
 };
