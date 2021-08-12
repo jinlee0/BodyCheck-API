@@ -4,6 +4,7 @@ const Sequelize = require('sequelize');
 const DateRecord = require('./dateRecord');
 const Domain = require('./domain');
 const Exercise = require('./exercise');
+const File = require('./file');
 const Record = require('./record');
 const User = require('./user');
 const UserProfile = require('./userProfile');
