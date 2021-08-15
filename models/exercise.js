@@ -10,11 +10,11 @@ module.exports = class Exercise extends Sequelize.Model {
             },
         }, {
             sequelize,
-            timestamps: false,
+            timestamps: true,
             underscored: false,
             modelName: 'Exercise',
             tableName: 'exercises',
-            // paranoid: true, // 레코드 삭제 시간 기록 컬럼 자동 생성
+            paranoid: true, // 레코드 삭제 시간 기록 컬럼 자동 생성
             charset: 'utf8',
             collate: 'utf8_general_ci',
         });
