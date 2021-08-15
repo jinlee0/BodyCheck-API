@@ -4,6 +4,10 @@ module.exports = class File extends Sequelize.Model {
   static init(sequelize) {
     return super.init(
       {
+        name: {
+          type: Sequelize.STRING(200),
+          allowNull: true
+        },
         file_type: { type: Sequelize.STRING(45), allowNull: true },
         size: {
           type: Sequelize.STRING(45),
