@@ -43,51 +43,47 @@ router.post('/', isLoggedIn,
 
 router.get('/', isLoggedIn, async (req, res, next) => {
     try {
-        // query options : { UserId, withVariables, withRecords }
+        // query options : { UserId, withVariables, withRecords, paranoid }
         // if (UserId) { return Exercises where UserId=UserId } else { return all Exercises }
         // if (withVariables) { return Exercises with Variables }
-        // if (withRecords) { return Exercises with Records }
+        // if (withRecords) { return Exercises with Variables and Records }
         const { UserId, withVariables, withRecords } = req.query;
-        let exercises;
+        let {paranoid} = req.query;
 
-        if (UserId) { // 
-            exercises = await Exercise.findAll({
-                where: {
-                    UserId,
-                },
-            });
-            if (exercises.length === 0) {
-                return res.status(204).json();
-            }
-        } else {
-            exercises = await Exercise.findAll({});
-            if (exercises.length === 0) {
-                return res.status(204).json();
+        if(paranoid){
+            if(paranoid === 'true' || paranoid === '1'){
+                paranoid = true;
+            } else if (paranoid === 'false' || paranoid === '0'){
+                paranoid = false;
+            } else {
+                return res.status(400).json(getFailure(req.originalUrl + ' paranoid: true/false/1/0'));
             }
         }
 
-        if(withVariables){
-            for(let i = 0; i < exercises.length; i++){
-                let variables = await Variable.findAll({where: {ExerciseId: exercises[i].id}});
-                exercises[i].dataValues.variables = variables;
-                if(withRecords){
-                    for(let j = 0; j < variables.length; j++){
-                        let records = await Record.findAll({where: {VariableId: variables[j].id}});
-                        variables[j].dataValues.records = records;
-                    }
-                }
-            }
-        } else {
+        let where = {};
+        if (UserId) { // 
+            where.UserId = UserId;
+        }
+
+        let includeObj = {};
+        let include = [includeObj];
+        if(withVariables || withRecords){
+            includeObj.model = Variable;
             if(withRecords){
-                for(let i = 0; i < exercises.length; i++){
-                    let variables = await Variable.findAll({where: {ExerciseId: exercises[i].id}});
-                    exercises[i].dataValues.records = []; // variable이 없을 경우에도 일정한 포맷으로 반환하기 위해
-                    for(let j = 0; j < variables.length; j++){
-                        let records = await Record.findAll({where: {VariableId: variables[j].id}});
-                        exercises[j].dataValues.records = records;
-                    }
-                }
+                includeObj.include = [{model: Record}];
             }
+        }
+
+        let options = {};
+        options.where = where;
+        options.paranoid = paranoid;
+        if(includeObj.model){
+            options.include = include;
+        }
+
+        const exercises = await Exercise.findAll(options);
+        if(exercises.length === 0){
+            return res.status(204).json();
         }
 
         return res.status(200).json(getSuccess(exercises));
@@ -101,7 +97,19 @@ router.get('/', isLoggedIn, async (req, res, next) => {
 router.get('/:id', isLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
-        const exercise = await Exercise.findOne({ where: { id } });
+        let {paranoid} = req.query;
+
+        if(paranoid){
+            if(paranoid === 'true' || paranoid === '1'){
+                paranoid = true;
+            } else if (paranoid === 'false' || paranoid === '0'){
+                paranoid = false;
+            } else {
+                return res.status(400).json(getFailure(req.originalUrl + ' paranoid: true/false/1/0'));
+            }
+        }
+
+        const exercise = await Exercise.findOne({ where: { id }, paranoid });
 
         if (!exercise) {
             res.status(404).json(getFailure(req.originalUrl));
@@ -122,6 +130,10 @@ router.patch('/:id', isLoggedIn, async (req, res, next) => {
         const exercise = await Exercise.findOne({ where: { id } });
         if (!exercise) {
             return res.status(404).json(getFailure(req.originalUrl));
+        }
+
+        if(name===null){
+            return res.status(400).json(getFailure(req.originalUrl + ' name is not nullable'));
         }
 
         if(name == exercise.getDataValue('name')){
