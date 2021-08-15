@@ -109,9 +109,17 @@ router.patch('/:id', isLoggedIn, async (req, res, next) => {
             return res.status(404).json(getFailure(req.originalUrl + ' No UserProfile with id'));
         }
 
+        if(nick === null){
+            return res.status(400).json(getFailure(req.originalUrl + ' nick is not nullable'));
+        }
+
         if(text){
-            if(text.length > 255){
-                return res.status(400).json(getFailure(req.originalUrl + ' Text must be 255 or less'));
+            if(typeof(text) === 'string'){
+                if(text.length > 255){
+                    return res.status(400).json(getFailure(req.originalUrl + ' Text must be 255 or less'));
+                }
+            } else {
+                return res.status(400).json(getFailure(req.originalUrl + ' text'));
             }
         }
         

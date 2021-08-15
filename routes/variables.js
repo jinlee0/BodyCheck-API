@@ -48,29 +48,37 @@ router.get('/', isLoggedIn, async (req, res, next) => {
         // if (ExerciseId) { return Variables where ExerciseId=ExerciseId } else { return all Variables } 
         // if (withRecords) { return Variables with Records }
         const { ExerciseId, withRecords } = req.query;
-        let variables;
+        let {paranoid} = req.query;
 
-        if (ExerciseId) { // 
-            variables = await Variable.findAll({
-                where: {
-                    ExerciseId,
-                },
-            });
-            if (variables.length === 0) {
-                return res.status(204).json();
-            }
-        } else {
-            variables = await Variable.findAll();
-            if (variables.length === 0) {
-                return res.status(204).json();
+        if(paranoid){
+            if(paranoid === 'true' || paranoid === '1'){
+                paranoid = true;
+            } else if (paranoid === 'false' || paranoid === '0'){
+                paranoid = false;
+            } else {
+                return res.status(400).json(getFailure(req.originalUrl + ' paranoid: true/false/1/0'));
             }
         }
 
+        let where = {};
+        if (ExerciseId) { // 
+            where.ExerciseId = ExerciseId;
+        }
+
+        let include = [];
         if(withRecords){
-            for(let i = 0; i < variables.length; i++){
-                const records = await Record.findAll({where: {VariableId: variables[i].id}});
-                variables[i].setDataValue('records', records);
-            }
+            include = [{model: Record}];
+        }
+
+        let options = {};
+        options.where = where;
+        if(include.length !== 0){
+            options.include = include;
+        } 
+
+        const variables = await Variable.findAll(options);
+        if(variables.length === 0){
+            return res.status(204).json();
         }
 
         return res.status(200).json(getSuccess(variables));
@@ -84,8 +92,19 @@ router.get('/', isLoggedIn, async (req, res, next) => {
 router.get('/:id', isLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
+        let {paranoid} = req.query;
 
-        const variable = await Variable.findOne({ where: { id } });
+        if(paranoid){
+            if(paranoid === 'true' || paranoid === '1'){
+                paranoid = true;
+            } else if (paranoid === 'false' || paranoid === '0'){
+                paranoid = false;
+            } else {
+                return res.status(400).json(getFailure(req.originalUrl + ' paranoid: true/false/1/0'));
+            }
+        }
+
+        const variable = await Variable.findOne({ where: { id }, paranoid });
         if (!variable) {
             return res.status(404).json(getFailure(req.originalUrl));
         }
@@ -107,8 +126,12 @@ router.patch('/:id', isLoggedIn, async (req, res, next) => {
             return res.status(404).json(getFailure(req.originalUrl));
         }
 
+        if(VariableTypeId === null){
+            return res.status(400).json(getFailure(req.originalUrl + ' VarialbeTypeId is not nullable'))
+        }
+
         // 하나라도 없으면 400 Bad request
-        if(!name && !VariableTypeId){
+        if(name===undefined && VariableTypeId===undefined){
             return res.status(400).json(getFailure(`${req.originalUrl} At least one content is required`));
         }
 

@@ -1,6 +1,6 @@
 const express = require('express');
 const { isLoggedIn, getSuccess, getFailure, getValidationError, updateForEach } = require('./middlewares');
-const { Variable, VariableType, Record, DateRecord } = require('../models');
+const { Variable, Record, DateRecord } = require('../models');
 const router = express.Router();
 
 router.post('/', isLoggedIn, 
@@ -19,7 +19,6 @@ router.post('/', isLoggedIn,
     async (req, res, next) => {
         const { record, VariableId, DateRecordId } = req.body;
 
-        // 이 부분은 record에서는 어떻게 수정?
         const exVariable = await Variable.findOne({where: {id:VariableId}});
         if(!exVariable){ 
             return res.status(404).json(getFailure(req.originalUrl + ' VariableId'));
@@ -35,47 +34,24 @@ router.post('/', isLoggedIn,
             VariableId,
             DateRecordId
         });
-        if(!record){
+        if(!target){
             return res.status(500).json(getFailure(`db error: create`));
         }
 
         return res.status(201).json(getSuccess(target));
 });
 
-// router.get('/:id')인 것도 있던데 이건 어떤 경우에?
 router.get('/', isLoggedIn, async (req, res, next) => { 
     try {
-        // query options : { ExerciseId, withRecords }
-        // if (ExerciseId) { return Variables where ExerciseId=ExerciseId } else { return all Variables } 
-        // if (withRecords) { return Variables with Records }
+        // query options : { VariableId, DateRecordId }
         const { VariableId, DateRecordId } = req.query;
         let records;
         let condition = {};
-        if (VariableId) { // 
-            const variable = await Variable.findOne({
-                where: {
-                    id : VariableId,
-                },
-            })
-            if(!variable) {
-                return res.status(404).json(getFailure(req.originalUrl));
-            }
-
-            // variable 찾기 통과 후
+        if (VariableId) {
             condition.VariableId = VariableId;
         }
 
         if(DateRecordId){
-            const dateRecord = await DateRecord.findOne({
-                where: {
-                    id : DateRecordId,
-                },
-            })
-            if(!dateRecord) {
-                return res.status(404).json(getFailure(req.originalUrl));
-            }
-
-            // dateRecord 찾기 통과 후
             condition.DateRecordId = DateRecordId;
         }
 
@@ -84,11 +60,7 @@ router.get('/', isLoggedIn, async (req, res, next) => {
         });
         
         if(records.length === 0){
-            if(VariableId || DateRecordId){
-                return res.status(404).json(getFailure(req.originalUrl));
-            } else {
-                return res.status(204).json();
-            }
+            return res.status(204).json();
         }
 
         return res.status(200).json(getSuccess(records));
@@ -151,8 +123,8 @@ router.patch('/:id', isLoggedIn, async (req, res, next) => {
             }
         }
 
-        // 기존 데이터과 같다면 204 No Contents
         const isSame = await updateForEach(target, {record, VariableId, DateRecordId});
+        // 기존 데이터과 같다면 204 No Contents
         if(isSame){
             return res.status(204).json();
         }

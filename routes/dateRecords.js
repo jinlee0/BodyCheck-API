@@ -1,110 +1,90 @@
 const express = require("express");
 const multer = require("multer");
-const { isLoggedIn } = require("./middlewares");
+const { isLoggedIn, getSuccess, getFailure, updateForEach } = require("./middlewares");
 const { File, DateRecord, Record } = require("../models");
 const router = express.Router();
-const upload = multer();
 
 // Read
 router.get("/", isLoggedIn, async (req, res, next) => {
   try {
-    const Id = req.body.id;
-    if (!Id) {
-      return res.status(400).json(getFailure(`${req.originalUrl} At least one content is required`));
+    // query options: date
+    const {date} = req.query;
+    
+    let where = {};
+    if(date !== undefined){
+      where.date = date;
     }
-    const record = await DateRecord.findOne(
-      { 
-        where: { id: req.body.id },
-        include: [File]
-      }
-    );
-    if (!record) {
-      return res.status(404).json(getFailure(req.originalUrl));
+    if(date === ''){
+      return res.status(400).json(getFailure(req.originalUrl + ' date is not nullable'));
     }
 
-    return res.status(200).json(getSuccess(record));
+    const dateRecords = await DateRecord.findAll({where});
+    if(dateRecords.length === 0){
+      return res.status(204).json();
+    }
+    return res.status(200).json(getSuccess(dateRecords));
   } catch (error) {
     console.error(error);
     next(error);
   }
-}
-);
+});
+
+router.get('/:id', isLoggedIn, async (req, res, next) => {
+  try {
+    const {id} = req.params;
+    
+    const dateRecord = await DateRecord.findOne({where:{id}});
+    if(!dateRecord){
+      return res.status(404).json(getFailure(req.originalUrl + ' id'));
+    }
+
+    return res.status(200).json(getSuccess(dateRecord));
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
+})
 
 // Create
-router.post("/", isLoggedIn, upload.none(), async (req, res, next) => {
-  const {
-    date,
-    startTime,
-    endTime,
-    memo
-  } = req.body;
-  // 누락 확인
-  if (!date || !startTime || !endTime || !memo) {
-    return res.status(400).json(getFailure(`${req.originalUrl} At least one content is required`));
-  }
-},
-async (req, res, next) => {
-  const {
-    date,
-    startTime,
-    endTime,
-    memo
-  } = req.body;
-  const record = await DateRecord.create({
-    date,
-    startTime,
-    endTime,
-    memo,
-  });
-  if(!record){
-    return res.status(500).json(getFailure(`db error: create`));
-  }
-  return res.status(201).json(getSuccess(record));
+router.post("/", isLoggedIn, async (req, res, next) => {
+        const {date,startTime,endTime,memo} = req.body;
+        const record = await DateRecord.create({
+          date,
+          startTime,
+          endTime,
+          memo,
+        });
+        if(!record){
+          return res.status(500).json(getFailure(`db error: create`));
+        }
+        return res.status(201).json(getSuccess(record));
 });
 
 // Update
-router.post("/", isLoggedIn, upload.none(), async (req, res, next) => {
+router.patch("/:id", isLoggedIn, async (req, res, next) => {
   try {
-    const {
-      date,
-      startTime,
-      endTime,
-      memo
-    } = req.body;
+    const {date,startTime,endTime,memo} = req.body;
 
-    const record = await DateRecord.findOne(
-      { 
-        where: { id: req.body.id }
-      });
-    if (!record) {
-        return res.status(404).json(getFailure(req.originalUrl));
+    if(date===undefined && startTime===undefined && endTime===undefined && memo===undefined){
+      return res.status(400).json(getFailure(req.originalUrl+ ' At least one content required'));
     }
 
-    // 누락 확인
-    if (!date || !startTime || !endTime || !memo) {
-      return res.status(400).json(getFailure(`${req.originalUrl} At least one content is required`));
+    if(date===null){
+      return res.status(400).json(getFailure(req.originalUrl + ' Date is not nullable'));
     }
 
-    // 중복확인
-    let data = {
-      date: record.getDataValue('date'),
-      startTime: record.getDataValue('startTime'),
-      endTime: record.getDataValue('endTime'),
-      memo: record.getDataValue('memo'),
+    const dateRecord = await DateRecord.findOne({where: {id: req.params.id}});
+    if(!dateRecord){
+      return res.status(404).json(getFailure(req.originalUrl + ' id'));
     }
-    if(JSON.stringify(data) == JSON.stringify(record.dataValues)){
+
+    const isSame = await updateForEach(dateRecord, {date, startTime, endTime, memo});
+    if(isSame){
       return res.status(204).json();
     }
 
-    await record.update({
-      date,
-      startTime,
-      endTime,
-      memo,
-    },
-      { where: { id: req.body.id } }
-    );
-    return res.status(201).json(getSuccess(record));
+    return res.status(201).json(getSuccess(dateRecord));
+
   } catch (error) {
     console.error(error);
     next(error);
@@ -115,15 +95,12 @@ router.post("/", isLoggedIn, upload.none(), async (req, res, next) => {
 router.delete("/:id", isLoggedIn, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const record = await DateRecord.findOne(
-      {
-        where: { id: req.body.id }
-      });
-    if (!record) {
-        return res.status(404).json(getFailure(`there is no dateRecord where id=${id}`));
+
+    const dateRecord = await DateRecord.findOne({where:{id}});
+    if(!dateRecord){
+      return res.status(404).json(req.originalUrl + ' id');
     }
-    
-    await DateRecord.destroy();
+    await dateRecord.destroy();
     return res.status(204).json();
   } catch (error) {
     console.error(error);
