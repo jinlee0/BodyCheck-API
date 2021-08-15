@@ -1,10 +1,10 @@
-const router = express.Router();
 const express = require("express");
+const router = express.Router();
 const multer = require("multer");
 const path = require("path");
 
 const { File, DateRecord } = require("../models");
-const { findByPk } = require("../models/dateRecords");
+const { findByPk } = require("../models/dateRecord");
 
 
 let storage = multer.diskStorage({
@@ -31,7 +31,7 @@ const upload = multer({
 
 // UD도 추가필요
 // read
-router.get('/', function(req, res, next) {
+router.get('/', async function(req, res, next) {
   try {
     let file = await File.findAll({
       where: { dateRecord_id: req.body.id },
@@ -48,7 +48,7 @@ router.get('/', function(req, res, next) {
 });
 
 // upload
-router.post('/', upload.single("img"), function(req, res, next) {
+router.post('/', upload.single("img"),async  function(req, res, next) {
   // 크기제한 (100MB)
   // multer({ dest: 'uploads/', limits: { fileSize: 100 * 1024 * 1024 } });
   try {
@@ -79,7 +79,7 @@ router.post('/', upload.single("img"), function(req, res, next) {
 });
 
 // update
-router.post('/', upload.single("img"), function(req, res, next) {
+router.post('/', upload.single("img"), async function(req, res, next) {
   try {
     let file = req.file
     let originalUrl = file.location;
