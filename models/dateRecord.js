@@ -5,7 +5,7 @@ module.exports = class DateRecord extends Sequelize.Model {
         return super.init({
             // id 컬럼은 자동 생성
             date: {
-                type: Sequelize.DATE,
+                type: Sequelize.DATEONLY,
                 allowNull: false,
             },
             startTime:{
