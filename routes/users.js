@@ -79,8 +79,7 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
 router.patch('/:id', isLoggedIn, async (req, res, next) => {
     try {
         // params: id
-        // query : {email}
-        // body : {password}
+        // body : {email, password}
         const {id} = req.params;
         const {email, password} = req.body;
         
