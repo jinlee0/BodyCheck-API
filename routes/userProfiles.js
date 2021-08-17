@@ -17,40 +17,44 @@ router.post('/', isLoggedIn,
         }
     },
     async (req, res, next) => {
-        // body : {UserId}
-        // body(option) : {nick, image, age, height, weight, text}
+        try {
+            // body : {UserId}
+            // body(option) : {nick, image, age, height, weight, text}
+            const { UserId } = req.body;
+            let {nick, image, age, height, weight, text} = req.body;
 
-        const { UserId } = req.body;
-        let {nick, image, age, height, weight, text} = req.body;
-
-        const user = await User.findOne({where:{id:UserId}});
-        if(!user){
-            return res.status(404).json(getFailure(' UserId'));
-        }
-
-        const exUserProfile = await UserProfile.findOne({where:{UserId}});
-        if(exUserProfile){
-            return res.status(400).json(getFailure(' Already exists'));
-        }
-
-        if(text){
-            if(text.length > 255){
-                return res.status(404).json(getFailure(' Text must be 255 or less'));
+            const user = await User.findOne({where:{id:UserId}});
+            if(!user){
+                return res.status(404).json(getFailure(' UserId'));
             }
-        }
 
-        if(!nick){
-            nick = user.getDataValue('email');
-        }
+            const exUserProfile = await UserProfile.findOne({where:{UserId}});
+            if(exUserProfile){
+                return res.status(400).json(getFailure(' Already exists'));
+            }
 
-        const userProfile = await UserProfile.create({
-            nick, image, age, height, weight, text, UserId,
-        });
-        if(!userProfile){
-            return res.status(500).json(getFailure(' DB error'));
-        }
+            if(text){
+                if(text.length > 255){
+                    return res.status(404).json(getFailure(' Text must be 255 or less'));
+                }
+            }
 
-        return res.status(201).json(getSuccess(userProfile));
+            if(!nick){
+                nick = user.getDataValue('email');
+            }
+
+            const userProfile = await UserProfile.create({
+                nick, image, age, height, weight, text, UserId,
+            });
+            if(!userProfile){
+                return res.status(500).json(getFailure(' DB error'));
+            }
+
+            return res.status(201).json(getSuccess(userProfile));
+        } catch (err) {
+            console.error(err);
+            next(err);
+        }
 });
 
 router.get('/', isLoggedIn, async (req, res, next) => {

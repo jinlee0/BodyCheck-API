@@ -5,40 +5,49 @@ const router = express.Router();
 
 router.post('/', isLoggedIn, 
     async (req, res, next) => {
-        // 만약 요청한 VariableId, RecordId, DateRecordId 값이 없으면 validationError 리턴
-        const { record, VariableId, DateRecordId } = req.body;
-        const params = { record, VariableId, DateRecordId };
-        const validationError = getValidationError(params);
-        if (validationError) {
-            return res.status(400).json(validationError);
-        }
-        else {
-            next();
+        try {    // 만약 요청한 VariableId, RecordId, DateRecordId 값이 없으면 validationError 리턴
+            const { record, VariableId, DateRecordId } = req.body;
+            const params = { record, VariableId, DateRecordId };
+            const validationError = getValidationError(params);
+            if (validationError) {
+                return res.status(400).json(validationError);
+            }
+            else {
+                next();
+            }
+        } catch (err) {
+            console.error(err);
+            next(err);
         }
 },
     async (req, res, next) => {
-        const { record, VariableId, DateRecordId } = req.body;
+        try {    
+            const { record, VariableId, DateRecordId } = req.body;
 
-        const exVariable = await Variable.findOne({where: {id:VariableId}});
-        if(!exVariable){ 
-            return res.status(404).json(getFailure(req.originalUrl + ' VariableId'));
+            const exVariable = await Variable.findOne({where: {id:VariableId}});
+            if(!exVariable){ 
+                return res.status(404).json(getFailure(req.originalUrl + ' VariableId'));
+            }
+
+            const exDateRecord = await DateRecord.findOne({where: {id:DateRecordId}});
+            if(!exDateRecord){ 
+                return res.status(404).json(getFailure(req.originalUrl + ' DateRecordId'));
+            }
+
+            const target = await Record.create({
+                record,
+                VariableId,
+                DateRecordId
+            });
+            if(!target){
+                return res.status(500).json(getFailure(`db error: create`));
+            }
+
+            return res.status(201).json(getSuccess(target));
+        } catch (err) {
+            console.error(err);
+            next(err);
         }
-
-        const exDateRecord = await DateRecord.findOne({where: {id:DateRecordId}});
-        if(!exDateRecord){ 
-            return res.status(404).json(getFailure(req.originalUrl + ' DateRecordId'));
-        }
-
-        const target = await Record.create({
-            record,
-            VariableId,
-            DateRecordId
-        });
-        if(!target){
-            return res.status(500).json(getFailure(`db error: create`));
-        }
-
-        return res.status(201).json(getSuccess(target));
 });
 
 router.get('/', isLoggedIn, async (req, res, next) => { 
