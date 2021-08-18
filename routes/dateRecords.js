@@ -47,17 +47,27 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
 
 // Create
 router.post("/", isLoggedIn, async (req, res, next) => {
-        const {date,startTime,endTime,memo} = req.body;
-        const record = await DateRecord.create({
-          date,
-          startTime,
-          endTime,
-          memo,
-        });
-        if(!record){
-          return res.status(500).json(getFailure(`db error: create`));
-        }
-        return res.status(201).json(getSuccess(record));
+  try{
+    const {date,startTime,endTime,memo} = req.body;
+
+    if(!date){
+      return res.status(400).json(getFailure(req.originalUrl+'Date is not nullable'));
+    }
+
+    const record = await DateRecord.create({
+      date,
+      startTime,
+      endTime,
+      memo,
+    });
+    if(!record){
+      return res.status(500).json(getFailure(`db error: create`));
+    }
+    return res.status(201).json(getSuccess(record));
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
 });
 
 // Update
