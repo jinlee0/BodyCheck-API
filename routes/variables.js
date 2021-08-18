@@ -1,6 +1,6 @@
 const express = require('express');
 const { isLoggedIn, getSuccess, getFailure, getValidationError, updateForEach } = require('./middlewares');
-const { Variable, VariableType, Record } = require('../models');
+const { Variable, VariableType, Record, Exercise } = require('../models');
 const router = express.Router();
 
 router.post('/', isLoggedIn, 
@@ -62,6 +62,10 @@ router.get('/', isLoggedIn, async (req, res, next) => {
 
         let where = {};
         if (ExerciseId) { // 
+            const exercise = await Exercise.findByPk(ExerciseId);
+            if(!exercise){
+                return res.status(404).json(getFailure(req.originalUrl + ' ExerciseId'));
+            }
             where.ExerciseId = ExerciseId;
         }
 
@@ -83,6 +87,20 @@ router.get('/', isLoggedIn, async (req, res, next) => {
 
         return res.status(200).json(getSuccess(variables));
 
+    } catch (err) {
+        console.error(err);
+        next(err);
+    }
+})
+
+router.get('/types', isLoggedIn, async (req, res, next) => {
+    try {
+        const variableTypes = await VariableType.findAll();
+        if(variableTypes.length === 0){
+            return res.status(204).json();
+        }
+
+        return res.status(200).json(getSuccess(variableTypes));
     } catch (err) {
         console.error(err);
         next(err);
