@@ -57,10 +57,18 @@ router.get('/', isLoggedIn, async (req, res, next) => {
         let records;
         let condition = {};
         if (VariableId) {
+            const variable = await Variable.findByPk(VariableId);
+            if(!variable){
+                return res.status(404).json(getFailure(req.originalUrl + ' VarialbeId'));
+            }
             condition.VariableId = VariableId;
         }
 
         if(DateRecordId){
+            const dateRecord = await DateRecord.findByPk(DateRecordId);
+            if(!dateRecord){
+                return res.status(404).json(getFailure(req.originalUrl + ' DateRecordId'));
+            }
             condition.DateRecordId = DateRecordId;
         }
 
@@ -87,7 +95,7 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
 
         const record = await Record.findOne({ where: { id } });
         if (!record) {
-            return res.status(404).json(getFailure(req.originalUrl));
+            return res.status(404).json(getFailure(req.originalUrl + ' id'));
         }
 
         return res.status(200).json(getSuccess(record));
