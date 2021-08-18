@@ -6,6 +6,13 @@ const fs = require("fs");
 const { isLoggedIn, getValidationError, getNoSuchResource, getSuccess, getFailure } = require('./middlewares');
 const { File, DateRecord } = require("../models");
 
+try {
+  fs.readdirSync('uploads');
+} catch(err) {
+  console.error('uploads 폴더가 없어 생성');
+  fs.mkdirSync('uploads');
+}
+
 //multer
 multer({ dest: 'uploads/' });
 const storage = multer.diskStorage({
@@ -13,7 +20,8 @@ const storage = multer.diskStorage({
     cb(null, 'uploads/');
   },
   filename: function (req, file, cb) {
-    cb(null, new Date().valueOf() + path.extname(file.originalname)); // 중복방지
+    const ext = path.extname(file.originalname);
+    cb(null, path.basename(file.originalname, ext) + Date.now() + ext); // 중복방지
   }
 });
 // 사진 크기제한 (30MB)
@@ -21,25 +29,6 @@ const upload = multer({ storage: storage, limits: { fileSize: 30 * 1024 * 1024 }
 // 영상 크기제한 (100MB)
 const upload2 = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } });
 
-// read
-router.get(
-  '/:id', 
-  isLoggedIn,
-  async function(req, res, next) {
-  try {
-    const file = await File.findAll({
-      where: { date_record_id: req.params.id }
-    })
-    if (!file) {
-      return res.status(404).json(getFailure(`does not found file via dateRecordId`));
-    }
-
-    return res.status(201).json(getSuccess(file));
-  } catch(error) {
-    console.error(error);
-    next(error);
-  }
-});
 
 // 사진
 // upload
@@ -48,16 +37,22 @@ router.post(
   isLoggedIn, 
   upload.single("img"), async  function(req, res, next) {
   try {
+    // body { DateRecordId }
+    const {DateRecordId, description} = req.body;
     const file = req.file
     const originalUrl = file.path;
-    const fileType = file.mimetype.split("/")[file.mimetype.split("/").length - 1];
+    const fileType = path.basename(file.mimetype);
 
-    let record = await DateRecord.findOne({
-      where: { id: req.body.id },
+    if(!DateRecordId){
+      return res.status(400).json(getFailure(req.originalUrl + `DateRecordId=${DateRecordId}`));
+    }
+
+    let dateRecord = await DateRecord.findOne({
+      where: { id: DateRecordId },
       include: [File]
     })
     console.log(file);
-    if (!record) {
+    if (!dateRecord) {
       return res.status(404).json(getFailure(`does not found dateRecord via id`));
     }
 
@@ -65,14 +60,14 @@ router.post(
       name: file.filename,
       file_type: fileType,
       size: file.size, // kb단위
-      original_url: originalUrl,
-      description: req.body.description,
+      origin_url: originalUrl,
+      description,
     });
     if (!upload) {
       return res.status(500).json(getFailure(`db error: create`));
     }
 
-    record = await record.addFile(upload);
+    await dateRecord.addFiles(upload);
     return res.status(201).json(getSuccess(upload));
   } catch(error) {
     console.error(error);
@@ -80,37 +75,6 @@ router.post(
   }
 });
 
-// delete
-router.delete(
-  '/img',  
-  isLoggedIn, 
-  upload.single("img"), async function(req, res, next) {
-  try {
-    let fileId = req.body.fileId;
-
-    let record = await DateRecord.findOne({
-      where: { id: req.body.id },
-      include: [File]
-    })
-    if (!record) {
-      return res.status(404).json(getFailure(`does not found dateRecord via id`));
-    }
-
-    let deleted = await File.findByPk(fileId);
-    if (!deleted) {
-      return res.status(404).json(getFailure(`does not found file via id`));
-    }
-
-    deleted = await deleted.destroy();
-    if (!deleted) {
-      return res.status(500).json(getFailure(`db error: destroy`));
-    }
-    return res.status(201).json(getSuccess(deleted));
-  } catch(error) {
-    console.error(error);
-    next(error);
-  }
-});
 
 // 영상
 // upload
@@ -119,16 +83,22 @@ router.post(
   isLoggedIn, 
   upload2.single("video"), async  function(req, res, next) {
   try {
+    // body { DateRecordId }
+    const {DateRecordId, description} = req.body;
     const file = req.file
     const originalUrl = file.path;
-    const fileType = file.mimetype.split("/")[file.mimetype.split("/").length - 1];
+    const fileType = path.basename(file.mimetype);
 
-    let record = await DateRecord.findOne({
-      where: { id: req.body.id },
+    if(!DateRecordId){
+      return res.status(400).json(getFailure(req.originalUrl + `DateRecordId=${DateRecordId}`));
+    }
+
+    let dateRecord = await DateRecord.findOne({
+      where: { id: DateRecordId },
       include: [File]
     })
     console.log(file);
-    if (!record) {
+    if (!dateRecord) {
       return res.status(404).json(getFailure(`does not found dateRecord via id`));
     }
 
@@ -136,14 +106,14 @@ router.post(
       name: file.filename,
       file_type: fileType,
       size: file.size, // kb단위
-      original_url: originalUrl,
-      description: req.body.description,
+      origin_url: originalUrl,
+      description,
     });
     if (!upload) {
       return res.status(500).json(getFailure(`db error: create`));
     }
 
-    record = await record.addFile(upload);
+    await dateRecord.addFiles(upload);
     return res.status(201).json(getSuccess(upload));
   } catch(error) {
     console.error(error);
@@ -151,32 +121,93 @@ router.post(
   }
 });
 
+
+
+// read
+router.get(
+  '/', 
+  isLoggedIn,
+  async function(req, res, next) {
+  try {
+    const {DateRecordId} = req.query;
+    let where = {};
+    if(DateRecordId){
+      const dateRecord = await DateRecord.findByPk(DateRecordId);
+      if(!dateRecord){
+        return res.status(404).json(getFailure(req.originalUrl + ' does not found DateRecord via DateReocrdId'));
+      }
+      where.dateRecord_id = DateRecordId;
+    }
+    const files = await File.findAll({where});
+    if (files.length === 0) {
+      return res.status(204).json();
+    }
+    return res.status(200).json(getSuccess(files));
+  } catch(error) {
+    console.error(error);
+    next(error);
+  }
+});
+
+
+router.get(
+  '/:id/download', 
+  isLoggedIn,
+  async function(req, res, next) {
+  try {
+    const {id} = req.params;
+    const file = await File.findByPk(id);
+    if (!file) {
+      return res.status(404).json(getFailure(`does not found file via id`));
+    }
+    return res.status(200).download(file.origin_url);
+  } catch(error) {
+    console.error(error);
+    next(error);
+  }
+});
+
+router.get(
+  '/:id', 
+  isLoggedIn,
+  async function(req, res, next) {
+  try {
+    const {id} = req.params;
+    const file = await File.findByPk(id);
+    if (!file) {
+      return res.status(404).json(getFailure(`does not found file via id`));
+    }
+    return res.status(200).json(getSuccess(file));
+  } catch(error) {
+    console.error(error);
+    next(error);
+  }
+});
+
+
+
 // delete
 router.delete(
-  '/video',  
-  isLoggedIn, 
-  upload2.single("video"), async function(req, res, next) {
+  '/:id',  
+  isLoggedIn,  async function(req, res, next) {
   try {
-    let fileId = req.body.fileId;
+    const {id} = req.params;
 
-    let record = await DateRecord.findOne({
-      where: { id: req.body.id },
-      include: [File]
-    })
-    if (!record) {
-      return res.status(404).json(getFailure(`does not found dateRecord via id`));
-    }
-
-    let deleted = await File.findByPk(fileId);
-    if (!deleted) {
+    const file = await File.findByPk(id);
+    if (!file) {
       return res.status(404).json(getFailure(`does not found file via id`));
     }
 
-    deleted = await deleted.destroy();
-    if (!deleted) {
-      return res.status(500).json(getFailure(`db error: destroy`));
+    if(!fs.existsSync(file.origin_url)){
+      return res.status(500).json(getFailure('db에서 파일 경로를 찾았는데 실제 경로엔 없네요...'));
     }
-    return res.status(201).json(getSuccess(deleted));
+
+    fs.unlinkSync(file.origin_url, (err) => {
+      console.error(err);
+    })
+    await file.destroy();
+
+    return res.status(204).json();
   } catch(error) {
     console.error(error);
     next(error);
