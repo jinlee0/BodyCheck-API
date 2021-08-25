@@ -4,7 +4,7 @@ const { isLoggedIn, getSuccess, getFailure, getValidationError } = require('./mi
 const { User, Variable, VariableType, Record } = require('../models');
 const router = express.Router();
 
-router.get('/', isLoggedIn, async (req, res, next) => {
+router.get('/', async (req, res, next) => {
     try {
         // query options : paranoid, email
         // if (paranoid) return {User with {deletedAt} include deleted records}
