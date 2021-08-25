@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { isLoggedIn, getValidationError, getNoSuchResource, getSuccess, getFailure } = require('./middlewares');
-const { User } = require('../models');
+const { User, Token } = require('../models');
 
 const router = express.Router();
 
@@ -18,7 +18,23 @@ router.post('/join', async (req, res, next) => {
             email,
             password: hash,
         });
-        return res.status(201).json(getSuccess(exUser));
+
+        const user = await User.findOne({
+            where: {email}, 
+            attributes: {exclude: ['password']},
+        });
+
+        const refreshToken = jwt.sign({
+        }, process.env.JWT_SECRET, {
+            issuer: 'sota',
+        });
+
+        const token = await Token.create({
+            UserId: user.id,
+            refreshToken,
+        })
+
+        return res.status(201).json(getSuccess(user));
     } catch (error) {
         console.error(error);
         return next(error);
@@ -55,6 +71,7 @@ router.post('/login',
                 return res.json(getFailure('email and password do not match'));
             }
 
+            const exp = Date.now() + 1000 * 60 * 60;
             const token = jwt.sign({
                 id: user.id,
                 email: user.email,
@@ -63,7 +80,11 @@ router.post('/login',
                 issuer: 'sota',
             });
 
-            return res.status(200).json(getSuccess(token));
+            const refreshToken = await Token.findOne({
+                where: {UserId: user.id},
+            })
+
+            return res.status(200).json(getSuccess({token, exp, refreshToken: refreshToken.refreshToken}));
         } catch (error) {
             console.error(error);
             return next(error);
@@ -83,12 +104,18 @@ router.get('/me', isLoggedIn, async (req, res, next) => {
     }
 });
 
-router.get('/refresh', isLoggedIn, async (req, res, next) => {
+router.post('/refresh', async (req, res, next) => {
     try {
-        const user = await User.findOne({ where: { id: req.decoded.id } });
-        if (!user) {
-            return res.status(400).json(getFailure(`user ${req.decoded.email} does not exist`))
+        const {id, refreshToken} = req.body;
+        const user = await User.findOne({
+            where: {id},
+            include: {model: Token, limit: 1},
+        });
+        if(refreshToken !== user.Tokens[0].refreshToken){
+            return res.status(400).json(getFailure('wrong refreshToken'));
         }
+
+        const exp = Date.now() + 1000 * 60 * 60;
         const token = jwt.sign({
             id: user.id,
             email: user.email,
@@ -96,7 +123,7 @@ router.get('/refresh', isLoggedIn, async (req, res, next) => {
             expiresIn: '1h',
             issuer: 'sota',
         });
-        return res.status(200).json(getSuccess(token));
+        return res.status(200).json(getSuccess({token, exp}));
     } catch (error) {
         console.error(error);
         return next(error);
