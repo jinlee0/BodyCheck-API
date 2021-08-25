@@ -93,7 +93,10 @@ router.post('/login',
 
 router.get('/me', isLoggedIn, async (req, res, next) => {
     try {
-        const user = await User.findOne({ where: { id: req.decoded.id } });
+        const user = await User.findOne({ 
+            where: { id: req.decoded.id },
+            attributes: {exclude: ['password']},
+        });
         if (!user) {
             return res.status(400).json(getNoSuchResource('user', `id=${req.decoded.id}`));
         }
