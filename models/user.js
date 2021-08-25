@@ -29,6 +29,7 @@ module.exports = class User extends Sequelize.Model {
     static associate(db) {
         // 관계
         db.User.hasMany(db.UserProfile);
+        db.User.hasMany(db.Token);
         db.User.hasMany(db.Domain);
         db.User.hasMany(db.Exercise);
     }
