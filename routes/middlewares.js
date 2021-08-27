@@ -41,6 +41,19 @@ middlewares.updateForEach = async (record, fields) => {
   return isSame;
 }
 
+middlewares.getTrueFalse = (str) => {
+  let res = '';
+  if(str){
+    if(str === 'true' || str === '1'){
+        res = true;
+    } else if (str === 'false' || str === '0'){
+        res = false;
+    } else {
+        res = 'error';
+    }
+  }
+  return res;
+}
 
 // middlewares
 middlewares.isLoggedIn = (req, res, next) => {
@@ -58,6 +71,18 @@ middlewares.isLoggedIn = (req, res, next) => {
         next();
       }
     })
+  }
+};
+
+middlewares.checkClient = (req, res, next) => {
+  const clientSecret = req.headers['bodycheck-client-secret'];
+  if(!clientSecret){
+    return res.status(401).json(middlewares.getFailure('client-secret is required in headers'));
+  }
+  if (clientSecret === process.env.CLIENT_SECRET) {
+    next();
+  } else {
+    return res.status(401).json(middlewares.getFailure('wrong client-secret'));
   }
 };
 

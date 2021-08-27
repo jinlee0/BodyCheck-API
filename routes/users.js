@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const { isLoggedIn, getSuccess, getFailure, getValidationError } = require('./middlewares');
+const { isLoggedIn, checkClient, getSuccess, getFailure, getValidationError } = require('./middlewares');
 const { User, Variable, VariableType, Record } = require('../models');
 const router = express.Router();
 
@@ -76,7 +76,7 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
     }
 })
 
-router.patch('/:id', isLoggedIn, async (req, res, next) => {
+router.patch('/:id', checkClient, async (req, res, next) => {
     try {
         // params: id
         // body : {email, password}

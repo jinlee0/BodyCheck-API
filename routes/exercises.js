@@ -1,5 +1,5 @@
 const express = require('express');
-const { isLoggedIn, getSuccess, getFailure, getValidationError } = require('./middlewares');
+const { isLoggedIn, getSuccess, getFailure, getValidationErro, getTrueFalse } = require('./middlewares');
 const { Exercise, Variable, Record, User } = require('../models');
 const router = express.Router();
 
@@ -158,13 +158,15 @@ router.delete('/:id', isLoggedIn, async (req, res, next) => {
         // Exercise를 delete하더라도 Record는 유지한다.
         // 유지되는 Record의 type을 해석하기 위해 Variable 또한 유지한다.
         const { id } = req.params;
+        let { force } = req.query;
+        force = getTrueFalse(force);
         
-        const exercise = await Exercise.findOne({ where: { id } });
+        const exercise = await Exercise.findOne({ where: { id }, paranoid: !force });
         if (!exercise) {
             return res.status(404).json(req.originalUrl);
         }
 
-        await exercise.destroy();
+        await exercise.destroy({force});
 
         return res.status(204).json();
     } catch (err) {

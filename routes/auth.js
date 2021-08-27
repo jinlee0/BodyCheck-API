@@ -1,12 +1,12 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { isLoggedIn, getValidationError, getNoSuchResource, getSuccess, getFailure } = require('./middlewares');
+const { isLoggedIn, getValidationError, getNoSuchResource, getSuccess, getFailure, checkClient } = require('./middlewares');
 const { User, Token } = require('../models');
 
 const router = express.Router();
 
-router.post('/join', async (req, res, next) => {
+router.post('/join', checkClient, async (req, res, next) => {
     const { email, password } = req.body;
     try {
         const exUser = await User.findOne({ where: { email } });
@@ -41,7 +41,7 @@ router.post('/join', async (req, res, next) => {
     }
 });
 
-router.post('/login',
+router.post('/login', checkClient,
     async (req, res, next) => {
         const { email, password } = req.body;
         const params = { email, password };
@@ -107,7 +107,7 @@ router.get('/me', isLoggedIn, async (req, res, next) => {
     }
 });
 
-router.post('/refresh', async (req, res, next) => {
+router.post('/refresh', isLoggedIn, async (req, res, next) => {
     try {
         const {id, refreshToken} = req.body;
         const user = await User.findOne({

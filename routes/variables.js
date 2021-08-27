@@ -183,13 +183,15 @@ router.patch('/:id', isLoggedIn, async (req, res, next) => {
 router.delete('/:id', isLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
+        let { force } = req.query;
+        force = getTrueFalse(force);
         
-        const variable = await Variable.findOne({ where: { id } });
+        const variable = await Variable.findOne({ where: { id }, paranoid: !force });
         if (!variable) {
             return res.status(404).json(getFailure(`there is no vairable where id=${id}`));
         }
 
-        await variable.destroy();
+        await variable.destroy({force});
 
         return res.status(204).json();
     } catch (err) {
