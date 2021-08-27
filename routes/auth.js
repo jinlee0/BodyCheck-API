@@ -109,7 +109,8 @@ router.get('/me', isLoggedIn, async (req, res, next) => {
 
 router.post('/refresh', isLoggedIn, async (req, res, next) => {
     try {
-        const {id, refreshToken} = req.body;
+        const {refreshToken} = req.body;
+        const {id} = req.decoded;
         const user = await User.findOne({
             where: {id},
             include: {model: Token, limit: 1},
