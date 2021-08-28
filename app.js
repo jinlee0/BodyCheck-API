@@ -15,6 +15,7 @@ const userProfileRouter = require('./routes/userProfiles');
 const recordRouter = require('./routes/records');
 const fileRouter = require('./routes/files');
 const dateRecordRouter = require('./routes/dateRecords');
+const dietRouter = require('./routes/diets');
 
 const { sequelize } = require('./models');
 
@@ -62,6 +63,7 @@ app.use('/userProfiles', userProfileRouter);
 app.use('/records', recordRouter);
 app.use('/files', fileRouter);
 app.use('/dateRecords', dateRecordRouter);
+app.use('/diets', dietRouter);
 
 app.listen(app.get('port'), () => {
     console.log(app.get('port'), '번 포트 활성화');
