@@ -38,5 +38,9 @@ module.exports = class DateRecord extends Sequelize.Model {
             foreignKey: "dateRecord_id",
             sourceKey: "id",
         });
+
+        db.DateRecord.hasMany(db.Diet);
+
+        db.DateRecord.belongsTo(db.User);
     }
 };

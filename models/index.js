@@ -11,6 +11,7 @@ const UserProfile = require('./userProfile');
 const Variable = require('./variable');
 const VariableType = require('./variableType');
 const Token = require('./token');
+const Diet = require('./diet');
 
 const env = process.env.NODE_ENV || 'development';
 const config = require(__dirname + '/../config/config.json')[env];
@@ -30,6 +31,7 @@ db.Variable = Variable;
 db.VariableType = VariableType;
 db.File = File;
 db.Token = Token;
+db.Diet = Diet;
 
 // 모델 생성
 DateRecord.init(sequelize);
@@ -42,6 +44,7 @@ Variable.init(sequelize);
 VariableType.init(sequelize);
 File.init(sequelize);
 Token.init(sequelize);
+Diet.init(sequelize);
 
 // 모델 관계 설정
 DateRecord.associate(db);
@@ -54,5 +57,6 @@ Variable.associate(db);
 VariableType.associate(db);
 File.associate(db);
 Token.associate(db);
+Diet.associate(db);
 
 module.exports = db;

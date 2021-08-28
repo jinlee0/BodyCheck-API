@@ -32,5 +32,6 @@ module.exports = class User extends Sequelize.Model {
         db.User.hasMany(db.Token);
         db.User.hasMany(db.Domain);
         db.User.hasMany(db.Exercise);
+        db.User.hasMany(db.DateRecord);
     }
 };
