@@ -127,16 +127,16 @@ router.patch('/:id', isLoggedIn, async (req, res, next) => {
         }
 
         if(VariableId){ // req.body에 VariableId가 있을 경우 값이 db에 존재하는지 확인 후 업데이트
-            const exVariableId = await Record.findOne({where: {id:VariableId}});
-            if(!exVariableId){
-                return res.status(404).json(getFailure());
+            const exVariable = await Variable.findByPk(VariableId);
+            if(!exVariable){
+                return res.status(404).json(getFailure(req.originalUrl + ' VariableId'));
             }
         }
 
         if(DateRecordId){ // req.body에 VariableId가 있을 경우 값이 db에 존재하는지 확인 후 업데이트
-            const exDateRecordId = await Record.findOne({where: {id:DateRecordId}});
-            if(!exDateRecordId){
-                return res.status(404).json(getFailure());
+            const exDateRecord = await DateRecord.findByPk(DateRecordId);
+            if(!exDateRecord){
+                return res.status(404).json(getFailure(req.originalUrl + ' DateRecordId'));
             }
         }
 

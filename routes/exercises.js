@@ -1,5 +1,5 @@
 const express = require('express');
-const { isLoggedIn, getSuccess, getFailure, getValidationErro, getTrueFalse } = require('./middlewares');
+const { isLoggedIn, getSuccess, getFailure, getValidationError, getTrueFalse } = require('./middlewares');
 const { Exercise, Variable, Record, User } = require('../models');
 const router = express.Router();
 
@@ -116,7 +116,7 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
         const exercise = await Exercise.findOne({ where: { id }, paranoid });
 
         if (!exercise) {
-            res.status(404).json(getFailure(req.originalUrl));
+            return res.status(404).json(getFailure(req.originalUrl + ' id'));
         }
 
         return res.status(200).json(getSuccess(exercise));
@@ -159,8 +159,7 @@ router.delete('/:id', isLoggedIn, async (req, res, next) => {
         // 유지되는 Record의 type을 해석하기 위해 Variable 또한 유지한다.
         const { id } = req.params;
         let { force } = req.query;
-        force = getTrueFalse(force);
-        
+        force = getTrueFalse(force, false);
         const exercise = await Exercise.findOne({ where: { id }, paranoid: !force });
         if (!exercise) {
             return res.status(404).json(req.originalUrl);
