@@ -41,7 +41,7 @@ middlewares.updateForEach = async (record, fields) => {
   return isSame;
 }
 
-middlewares.getTrueFalse = (str) => {
+middlewares.getTrueFalse = (str, defalt) => {
   let res = '';
   if(str){
     if(str === 'true' || str === '1'){
@@ -49,8 +49,10 @@ middlewares.getTrueFalse = (str) => {
     } else if (str === 'false' || str === '0'){
         res = false;
     } else {
-        res = 'error';
+        res = defalt;
     }
+  } else {
+    res = defalt;
   }
   return res;
 }
