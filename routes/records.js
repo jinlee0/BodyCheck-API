@@ -127,7 +127,7 @@ router.patch('/:id', isLoggedIn, async (req, res, next) => {
         }
 
         // 하나라도 없으면 400 Bad request
-        if(record === undefined && VariableId === undefined && DateRecordId === undefined){
+        if(record === undefined && VariableId === undefined && DateRecordId === undefined && set === undefined){
             return res.status(400).json(getFailure(`${req.originalUrl} At least one content is required`));
         }
 

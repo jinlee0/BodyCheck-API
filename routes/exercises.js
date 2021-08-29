@@ -62,7 +62,7 @@ router.get('/', isLoggedIn, async (req, res, next) => {
 
         let where = {};
         if (UserId) { // 
-            const user = await User.findByPk(UserId);
+            const user = await User.findByPk(UserId, {paranoid});
             if(!user){
                 return res.status(404).json(getFailure(req.originalUrl + ' UserId'));
             }

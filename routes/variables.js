@@ -62,7 +62,7 @@ router.get('/', isLoggedIn, async (req, res, next) => {
 
         let where = {};
         if (ExerciseId) { // 
-            const exercise = await Exercise.findByPk(ExerciseId);
+            const exercise = await Exercise.findByPk(ExerciseId, {paranoid});
             if(!exercise){
                 return res.status(404).json(getFailure(req.originalUrl + ' ExerciseId'));
             }
@@ -76,6 +76,7 @@ router.get('/', isLoggedIn, async (req, res, next) => {
 
         let options = {};
         options.where = where;
+        options.paranoid = paranoid;
         if(include.length !== 0){
             options.include = include;
         } 
@@ -184,7 +185,7 @@ router.delete('/:id', isLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
         let { force } = req.query;
-        force = getTrueFalse(force);
+        force = getTrueFalse(force, false);
         
         const variable = await Variable.findOne({ where: { id }, paranoid: !force });
         if (!variable) {
