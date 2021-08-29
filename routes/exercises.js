@@ -73,6 +73,7 @@ router.get('/', isLoggedIn, async (req, res, next) => {
         let include = [includeObj];
         if(withVariables || withRecords){
             includeObj.model = Variable;
+            includeObj.paranoid = paranoid;
             if(withRecords){
                 includeObj.include = [{model: Record}];
             }
@@ -83,6 +84,7 @@ router.get('/', isLoggedIn, async (req, res, next) => {
         options.paranoid = paranoid;
         if(includeObj.model){
             options.include = include;
+            
         }
 
         const exercises = await Exercise.findAll(options);
