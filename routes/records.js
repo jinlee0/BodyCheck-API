@@ -6,8 +6,8 @@ const router = express.Router();
 router.post('/', isLoggedIn, 
     async (req, res, next) => {
         try {    // 만약 요청한 VariableId, RecordId, DateRecordId 값이 없으면 validationError 리턴
-            const { record, VariableId, DateRecordId } = req.body;
-            const params = { record, VariableId, DateRecordId };
+            const { record, VariableId, DateRecordId, set } = req.body;
+            const params = { record, VariableId, DateRecordId, set };
             const validationError = getValidationError(params);
             if (validationError) {
                 return res.status(400).json(validationError);
@@ -22,7 +22,7 @@ router.post('/', isLoggedIn,
 },
     async (req, res, next) => {
         try {    
-            const { record, VariableId, DateRecordId } = req.body;
+            const { record, VariableId, DateRecordId, set } = req.body;
 
             const exVariable = await Variable.findOne({where: {id:VariableId}});
             if(!exVariable){ 
@@ -37,7 +37,8 @@ router.post('/', isLoggedIn,
             const target = await Record.create({
                 record,
                 VariableId,
-                DateRecordId
+                DateRecordId,
+                set
             });
             if(!target){
                 return res.status(500).json(getFailure(`db error: create`));
@@ -52,8 +53,8 @@ router.post('/', isLoggedIn,
 
 router.get('/', isLoggedIn, async (req, res, next) => { 
     try {
-        // query options : { VariableId, DateRecordId }
-        const { VariableId, DateRecordId } = req.query;
+        // query options : { VariableId, DateRecordId, set }
+        const { VariableId, DateRecordId, set } = req.query;
         let records;
         let condition = {};
         if (VariableId) {
@@ -70,6 +71,10 @@ router.get('/', isLoggedIn, async (req, res, next) => {
                 return res.status(404).json(getFailure(req.originalUrl + ' DateRecordId'));
             }
             condition.DateRecordId = DateRecordId;
+        }
+
+        if(set){
+            condition.set = set;
         }
 
         records = await Record.findAll({
@@ -108,7 +113,7 @@ router.get('/:id', isLoggedIn, async (req, res, next) => {
 router.patch('/:id', isLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { record, VariableId, DateRecordId } = req.body;
+        const { record, VariableId, DateRecordId, set } = req.body;
         // {VariableId, DateRecordId} Not Null
 
         const target = await Record.findOne({ where: { id } });
@@ -140,7 +145,7 @@ router.patch('/:id', isLoggedIn, async (req, res, next) => {
             }
         }
 
-        const isSame = await updateForEach(target, {record, VariableId, DateRecordId});
+        const isSame = await updateForEach(target, {record, VariableId, DateRecordId, set});
         // 기존 데이터과 같다면 204 No Contents
         if(isSame){
             return res.status(204).json();

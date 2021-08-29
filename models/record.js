@@ -7,6 +7,9 @@ module.exports = class Record extends Sequelize.Model {
             record: {
                 type: Sequelize.STRING(45),
             },
+            set: {
+                type: Sequelize.INTEGER,
+            }
         }, {
             sequelize,
             timestamps: false,
