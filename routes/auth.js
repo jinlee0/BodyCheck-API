@@ -107,7 +107,7 @@ router.get('/me', isLoggedIn, async (req, res, next) => {
     }
 });
 
-router.post('/refresh', isLoggedIn, async (req, res, next) => {
+router.post('/refresh', checkClient, async (req, res, next) => {
     try {
         const {refreshToken} = req.body;
         const {id} = req.decoded;
