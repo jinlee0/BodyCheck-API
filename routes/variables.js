@@ -1,5 +1,5 @@
 const express = require('express');
-const { isLoggedIn, getSuccess, getFailure, getValidationError, updateForEach } = require('./middlewares');
+const { isLoggedIn, getSuccess, getFailure, getValidationError, updateForEach, getTrueFalse } = require('./middlewares');
 const { Variable, VariableType, Record, Exercise } = require('../models');
 const router = express.Router();
 
