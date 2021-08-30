@@ -165,7 +165,7 @@ router.delete('/:id', isLoggedIn, async (req, res, next) => {
         
         const record = await Record.findOne({ where: { id } });
         if (!record) {
-            return res.status(404).json(getFailure(`there is no vairable where id=${id}`));
+            return res.status(404).json(getFailure(`there is no record where id=${id}`));
         }
 
         await record.destroy();

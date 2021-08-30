@@ -20,6 +20,7 @@ const storage = multer.diskStorage({
     cb(null, 'uploads/');
   },
   filename: function (req, file, cb) {
+    console.log(file);
     const ext = path.extname(file.originalname);
     cb(null, path.basename(file.originalname, ext) + Date.now() + ext); // 중복방지
   }
@@ -39,7 +40,7 @@ router.post(
   try {
     // body { DateRecordId }
     const {DateRecordId, description} = req.body;
-    const file = req.file
+    const file = req.file;
     const originalUrl = file.path;
     const fileType = path.basename(file.mimetype);
 
@@ -51,7 +52,6 @@ router.post(
       where: { id: DateRecordId },
       include: [File]
     })
-    console.log(file);
     if (!dateRecord) {
       return res.status(404).json(getFailure(`does not found dateRecord via id`));
     }
@@ -80,7 +80,6 @@ router.post(
 // upload
 router.post(
   '/video', 
-  isLoggedIn, 
   upload2.single("video"), async  function(req, res, next) {
   try {
     // body { DateRecordId }
@@ -126,7 +125,6 @@ router.post(
 // read
 router.get(
   '/', 
-  isLoggedIn,
   async function(req, res, next) {
   try {
     const {DateRecordId} = req.query;
@@ -152,7 +150,6 @@ router.get(
 
 router.get(
   '/:id/download', 
-  isLoggedIn,
   async function(req, res, next) {
   try {
     const {id} = req.params;
@@ -169,7 +166,6 @@ router.get(
 
 router.get(
   '/:id', 
-  isLoggedIn,
   async function(req, res, next) {
   try {
     const {id} = req.params;
@@ -189,7 +185,7 @@ router.get(
 // delete
 router.delete(
   '/:id',  
-  isLoggedIn,  async function(req, res, next) {
+  async function(req, res, next) {
   try {
     const {id} = req.params;
 

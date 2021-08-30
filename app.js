@@ -28,7 +28,7 @@ nunjucks.configure('views', {
 });
 app.use(morgan('dev'));
 app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
+app.use(express.json({limit: '10mb'}));
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE');
