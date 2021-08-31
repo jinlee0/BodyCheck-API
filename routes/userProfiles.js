@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require('fs');
 const { isLoggedIn, getSuccess, getFailure, getValidationError, updateForEach } = require('./middlewares');
 const { UserProfile, User } = require('../models');
 const router = express.Router();
@@ -160,5 +161,64 @@ router.delete('/:id', isLoggedIn, async (req, res, next) => {
         next(err);
     }
 })
+
+// file
+router.post("/:id/image/upload", isLoggedIn, async (req, res, next) => {
+    try {
+        const UserProfileId = req.params.id;
+        const { file} = req.body;
+        const originalUrl = file.path;
+
+        if(!UserProfileId){
+        return res.status(400).json(getFailure(req.originalUrl + `UserProfileId=${UserProfileId}`));
+        }
+
+        let userProfile = await UserProfile.findOne({
+        where: { id: UserProfileId },
+        })
+        if (!userProfile) {
+        return res.status(404).json(getFailure(`does not found userProfile via id`));
+        }
+
+        userProfile = await userProfile.update({image: originalUrl});
+
+        return res.status(201).json(getSuccess(userProfile));
+    } catch (error) {
+        console.error(error);
+        next(error);
+    }
+});
+
+
+
+router.delete(
+    '/:id/image',  
+    async function(req, res, next) {
+    try {
+    const {id} = req.params;
+
+    const userProfile = await UserProfile.findByPk(id);
+    if (!userProfile) {
+        return res.status(404).json(getFailure(`does not found file via id`));
+    }
+
+    const url = userProfile.getDataValue('image');
+
+    if(!fs.existsSync(url)){
+        return res.status(500).json(getFailure('db에서 파일 경로를 찾았는데 실제 경로엔 없네요...'));
+    }
+
+    fs.unlinkSync(url, (err) => {
+        console.error(err);
+    })
+
+    await UserProfile.update({image: null});
+
+    return res.status(204).json();
+    } catch(error) {
+    console.error(error);
+    next(error);
+    }
+});
 
 module.exports = router;

@@ -20,7 +20,6 @@ const storage = multer.diskStorage({
     cb(null, 'uploads/');
   },
   filename: function (req, file, cb) {
-    console.log(file);
     const ext = path.extname(file.originalname);
     cb(null, path.basename(file.originalname, ext) + Date.now() + ext); // 중복방지
   }
@@ -31,95 +30,28 @@ const upload = multer({ storage: storage, limits: { fileSize: 30 * 1024 * 1024 }
 const upload2 = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } });
 
 
-// 사진
-// upload
+
 router.post(
   '/img', 
-  isLoggedIn, 
   upload.single("img"), async  function(req, res, next) {
   try {
-    // body { DateRecordId }
-    const {DateRecordId, description} = req.body;
-    const file = req.file;
-    const originalUrl = file.path;
-    const fileType = path.basename(file.mimetype);
-
-    if(!DateRecordId){
-      return res.status(400).json(getFailure(req.originalUrl + `DateRecordId=${DateRecordId}`));
-    }
-
-    let dateRecord = await DateRecord.findOne({
-      where: { id: DateRecordId },
-      include: [File]
-    })
-    if (!dateRecord) {
-      return res.status(404).json(getFailure(`does not found dateRecord via id`));
-    }
-
-    const upload = await File.create({
-      name: file.filename,
-      file_type: fileType,
-      size: file.size, // kb단위
-      origin_url: originalUrl,
-      description,
-    });
-    if (!upload) {
-      return res.status(500).json(getFailure(`db error: create`));
-    }
-
-    await dateRecord.addFiles(upload);
-    return res.status(201).json(getSuccess(upload));
+    return res.status(201).json(getSuccess({path: req.file}));
   } catch(error) {
     console.error(error);
     next(error);
   }
 });
 
-
-// 영상
-// upload
 router.post(
   '/video', 
   upload2.single("video"), async  function(req, res, next) {
   try {
-    // body { DateRecordId }
-    const {DateRecordId, description} = req.body;
-    const file = req.file
-    const originalUrl = file.path;
-    const fileType = path.basename(file.mimetype);
-
-    if(!DateRecordId){
-      return res.status(400).json(getFailure(req.originalUrl + `DateRecordId=${DateRecordId}`));
-    }
-
-    let dateRecord = await DateRecord.findOne({
-      where: { id: DateRecordId },
-      include: [File]
-    })
-    console.log(file);
-    if (!dateRecord) {
-      return res.status(404).json(getFailure(`does not found dateRecord via id`));
-    }
-
-    const upload = await File.create({
-      name: file.filename,
-      file_type: fileType,
-      size: file.size, // kb단위
-      origin_url: originalUrl,
-      description,
-    });
-    if (!upload) {
-      return res.status(500).json(getFailure(`db error: create`));
-    }
-
-    await dateRecord.addFiles(upload);
-    return res.status(201).json(getSuccess(upload));
+    return res.status(201).json(getSuccess({path: req.file}));
   } catch(error) {
     console.error(error);
     next(error);
   }
 });
-
 
 
 // read
